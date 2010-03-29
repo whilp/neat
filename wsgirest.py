@@ -84,7 +84,7 @@ class Service(object):
                 "args=%s, kwargs=%s", target, req.urlargs,
                 req.urlvars)
         except NotImplementedError:
-            logging.debug("Resource method not implemented")
+            logging.debug("%s not implemented", target)
             response = exc.HTTPNotFound()
         except exc.HTTPException, e:
             response = e
@@ -98,7 +98,7 @@ class Service(object):
                 resource.response.body = response
             response = resource.response
 
-        return resource.response(environ, start_response)
+        return response(environ, start_response)
 
     def register(self, *resources):
         """Register *resources* with the service.
