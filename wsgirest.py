@@ -191,9 +191,9 @@ class Resource(object):
     uri = ""
     """The :class:`Resource`'s URI."""
 
-    def __init__(self, request):
+    def __init__(self, request, response=None):
         self.request = request
-        self.response = Response()
+        self.response = response is None and Response() or response
         self.response.request = self.request
 
     def list(self):
