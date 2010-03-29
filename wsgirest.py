@@ -13,17 +13,22 @@ def parent(uri):
 class Service(object):
     """A WSGI service.
 
-    Services route HTTP requests to :class:`Resource` subclasses
-    registered with the service. :class:`Service` is a valid WSGI
-    application (see :meth:`__call__`); the registered resources should
-    also be valid WSGI applications.
+    Services route HTTP requests to resources (usually subclasses of
+    :class:`Resource`) registered with the service. :class:`Service`
+    is a valid WSGI application (see :meth:`__call__`); the registered
+    resources should provide methods that return valid WSGI applications
+    (see :attr:`methods`).
 
-    When instantiating a :class:`Service`, the :class:`Resource`
-    subclasses may be passed as arguments to the constructor. Otherwise,
-    the :meth:`register` method may be called later to add other
-    resources.
+    When instantiating a :class:`Service`, the uninstantiated resources
+    may be passed as arguments to the constructor. Otherwise, the
+    :meth:`register` method may be called later to add other resources.
     """
     prefix = ""
+    """URI prefix under which the Service's resources can be found.
+
+    Request URIs that do not match this prefix will raise
+    :class:`webob.exc.HTTPNotFound` errors.
+    """
     resources = {}
     """A dictionary mapping URIs to resources.
 
@@ -31,7 +36,8 @@ class Service(object):
     request's PATH_INFO environment variable. The values should be
     subclasses of :class:`Resource` (or something else that implements
     similar functionality). When a resource matches a requested URI, it
-    will be instantiated and passed the standard WSGI arguments.
+    will be instantiated and passed the standard WSGI arguments. Note
+    that the values of this dictionary should be classes, not instances.
     """
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
@@ -41,8 +47,9 @@ class Service(object):
 
     The keys in the toplevel dictionary describes a type of resource
     (either "member" or "collection"). Those keys point to dictionaries
-    mapping HTTP methods to methods of the :class:`Resource` that are
-    appropriate for the resource type.
+    mapping HTTP methods to the names of methods that will be called on
+    registered resources. These methods should return valid WSGI
+    applications.
     """
     
     def __init__(self, *resources):
@@ -55,11 +62,12 @@ class Service(object):
 
         This method makes the :class:`Service` a valid WSGI application.
         If :meth:`route` does not find a suitable resource, an
-        :instance:`webob.exc.HTTPNotFound` instance will be returned.
+        :class:`webob.exc.HTTPNotFound` instance will be returned.
         After the proper resource is found, :meth:`__call__` calls
         :meth:`dispatch` to find the appropriate method on the resource.
         Finally, the resource's method is called with the *environ* and
-        *start_response* arguments and the result is returned.
+        *start_response* arguments and the resulting WSGI application is
+        returned.
         """
         req = Request(environ)
         notfound = ""
@@ -77,7 +85,8 @@ class Service(object):
         if notfound:
             return exc.HTTPNotFound(notfound)(environ, start_response)
 
-        target = "%s.%s" % (method.im_class.__name__, method.im_func.func_name)
+        target = "%s.%s.%s" % (method.im_class.__module__,
+            method.im_class.__name__, method.im_func.func_name)
         try:
             response = method(*req.urlargs, **req.urlvars)
             logging.debug("Dispatching to %s with "
@@ -103,9 +112,10 @@ class Service(object):
     def register(self, *resources):
         """Register *resources* with the service.
 
-        Each resource should be a subclass of :class:`Resource` with a
-        :attr:`Resource.uri` attribute; this URI will be set as the key
-        for the resource in the :attr:`resources` dictionary.
+        Each resource should implement the API defined in
+        :class:`Resource` and have a :attr:`Resource.uri` attribute.
+        This URI will be set as the key for the resource in the
+        :attr:`resources` dictionary.
         """
         self.resources.update([(r.uri, r) for r in resources])
 
@@ -114,7 +124,7 @@ class Service(object):
 
         :meth:`route` first checks that the *request*'s PATH_INFO
         falls under the :class:`Serivce`'s :attr:`prefix`. If not,
-        :meth:`route` returns None. Otherwise, :meth:`route` first
+        :meth:`route` returns None. Otherwise, :meth:`route` then
         looks for a resource registered in :attr:`resources` that
         matches PATH_INFO (minus the Service prefix). If no resource
         matches, :meth:`route` computes the possible parent resource of
@@ -135,17 +145,15 @@ class Service(object):
         if resource is None:
             resource = self.resources.get(parent(uri), None)
 
-        if resource is None:
-            logging.debug("Routing request for '%s'", uri)
-
         return resource
 
     def dispatch(self, resource):
-        """Dispatch the *request* to the appropriate method on *resource*.
+        """Dispatch to the appropriate method on *resource*.
 
         After :meth:`route` has found the matching resource for a
         request, :meth:`dispatch` chooses the appropriate method using
-        the :attr:`methods` dictionary and returns it.
+        the *resource*'s :attr:`Resource.request` attribute and the
+        :attr:`methods` dictionary and returns the matching method.
         """
         req = resource.request
         req.urlargs, req.urlvars = (), {}
@@ -164,20 +172,21 @@ class Service(object):
         return method
 
 class Resource(object):
-    """A WSGI resource.
- 
-    A Resource instance or subclass allows standard REST-like access
-    to a resource. The methods implemented here correspond to the
-    protocol operations defined in the `Atom Publishing Protocol
+    """A REST resource.
+
+    A :class:`Resource` instance or subclass allows standard REST-like
+    access to a HTTP resource. The methods implemented here correspond
+    to the protocol operations defined in the `Atom Publishing Protocol
     <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
 
-    At instantiation, a :class:`webob.Request` instance should be passed
+    On instantiation, a :class:`webob.Request` instance should be passed
     to the :class:`Resource`. The REST methods may then be called with
     arguments and keyword arguments parsed from the Request instance.
     These methods return a :instance:`webob.Response` instance (which is
     a WSGI application).
     """
     uri = ""
+    """The :class:`Resource`'s URI."""
 
     def __init__(self, request):
         self.request = request
@@ -216,9 +225,9 @@ def lala():
         Records,
     )
     logging.basicConfig()
-    r = Request.blank("/records/1")
-    r.get_response(s)
-    print r
+    request = Request.blank("/records/1")
+    response = request.get_response(s)
+    print response
 
 def serve():
     from wsgiref.simple_server import make_server
