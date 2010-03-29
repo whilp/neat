@@ -165,15 +165,17 @@ class Service(object):
 
 class Resource(object):
     """A WSGI resource.
-
-    A Resource is a valid WSGI application that allows standard
-    REST-like access to a resource. The methods implemented here correspond
-    to the protocol operations defined in the `Atom Publishing Protocol
+ 
+    A Resource instance or subclass allows standard REST-like access
+    to a resource. The methods implemented here correspond to the
+    protocol operations defined in the `Atom Publishing Protocol
     <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
 
     At instantiation, a :class:`webob.Request` instance should be passed
-    to the :class:`Resource`. When called, the :class:`Resource` will
-    parse the Request to determine the appropriate method to call.
+    to the :class:`Resource`. The REST methods may then be called with
+    arguments and keyword arguments parsed from the Request instance.
+    These methods return a :instance:`webob.Response` instance (which is
+    a WSGI application).
     """
     uri = ""
 
