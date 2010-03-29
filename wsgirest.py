@@ -3,13 +3,6 @@ import logging
 from posixpath import dirname
 from webob import Response, Request, exc
 
-def parent(uri):
-    """Return the parent of a URI.
-
-    Here, a parent URI is similar to a POSIX parent directory.
-    """
-    return dirname(uri)
-
 class Service(object):
     """A WSGI service.
 
@@ -143,7 +136,7 @@ class Service(object):
         # compute its parent and check for that.
         resource = self.resources.get(uri, None)
         if resource is None:
-            resource = self.resources.get(parent(uri), None)
+            resource = self.resources.get(self.parent(uri), None)
 
         return resource
 
@@ -170,6 +163,13 @@ class Service(object):
         method = getattr(resource, methname, None)
 
         return method
+
+    def parent(self, uri):
+        """Return the parent of a URI.
+
+        Here, a parent URI is similar to a POSIX parent directory.
+        """
+        return dirname(uri)
 
 class Resource(object):
     """A REST resource.
