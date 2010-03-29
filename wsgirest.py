@@ -100,6 +100,9 @@ class Service(object):
                 resource.response.body = response
             response = resource.response
 
+        if response.request is None:
+            response.request = req
+
         return response(environ, start_response)
 
     def register(self, *resources):
@@ -191,6 +194,7 @@ class Resource(object):
     def __init__(self, request):
         self.request = request
         self.response = Response()
+        self.response.request = self.request
 
     def list(self):
         """List members of a collection."""
