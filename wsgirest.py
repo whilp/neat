@@ -11,6 +11,18 @@ def parent(uri):
     return dirname(uri)
 
 class Service(object):
+    """A WSGI service.
+
+    Services route HTTP requests to :class:`Resource` subclasses
+    registered with the service. :class:`Service` is a valid WSGI
+    application (see :meth:`__call__`); the registered resources should
+    also be valid WSGI applications.
+
+    When instantiating a :class:`Service`, the :class:`Resource`
+    subclasses may be passed as arguments to the constructor. Otherwise,
+    the :meth:`register` method may be called later to add other
+    resources.
+    """
     prefix = ""
     resources = {}
     """A dictionary mapping URIs to resources.
@@ -23,17 +35,43 @@ class Service(object):
     """
     
     def __init__(self, *resources):
-        self.resources = dict((r.uri, r) for r in resources)
         logging.debug("Registered %d resources", len(resources))
+        self.register(*resources)
     
     def __call__(self, environ, start_response):
+        """Dispatch to a resource.
+
+        This method makes the :class:`Service` a valid WSGI application.
+        If :meth:`dispatch` does not find a suitable resource, an
+        :instance:`webob.exc.HTTPNotFound` instance will be returned.
+        """
         req = Request(environ)
         resource = self.dispatch(req)
         if resource is None:
             return exc.HTTPNotFound()(environ, start_response)
         return resource(req)(environ, start_response)
 
+    def register(self, *resources):
+        """Register *resources* with the service.
+
+        Each resource should be a subclass of :class:`Resource` with a
+        :attr:`Resource.uri` attribute; this URI will be set as the key
+        for the resource in the :attr:`resources` dictionary.
+        """
+        self.resources = dict((r.uri, r) for r in resources)
+
     def dispatch(self, request):
+        """Route the *request* to the appropriate resource.
+
+        :meth:`dispatch` first checks that the *request*'s PATH_INFO
+        falls under the :class:`Serivce`'s :attr:`prefix`. If not,
+        :meth:`dispatch` returns None. Otherwise, :meth:`dispatch` first
+        looks for a resource registered in :attr:`resources` that
+        matches PATH_INFO (minus the Service prefix). If no resource
+        matches, :meth:`dispatch` computes the possible parent resource of
+        the request (using :func:`parent`) and checks again. Finally,
+        either the matching resource or None is returned.
+        """
         uri = request.path_info
         if not uri.startswith(self.prefix):
             logging.debug("Request URI '%s' not in service prefix '%s'",
@@ -54,6 +92,17 @@ class Service(object):
         return resource
 
 class Resource(object):
+    """A WSGI resource.
+
+    A Resource is a valid WSGI application that allows standard
+    REST-like access to a resource. The methods implemented here correspond
+    to the protocol operations defined in the `Atom Publishing Protocol
+    <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
+
+    At instantiation, a :class:`webob.Request` instance should be passed
+    to the :class:`Resource`. When called, the :class:`Resource` will
+    parse the Request to determine the appropriate method to call.
+    """
     uri = ""
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
