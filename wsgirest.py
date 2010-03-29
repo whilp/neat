@@ -115,12 +115,12 @@ class Resource(object):
     
     def __call__(self, environ, start_response):
         req = self.request
-        args, kwargs = (), {}
+        req.urlargs, req.urlvars = (), {}
 
         resource = "collection"
         if req.path_info != self.uri:
             resource = "member"
-            args = (req.path_info[len(self.uri) + 1:],)
+            req.urlargs = (req.path_info[len(self.uri) + 1:],)
 
         methname = self.methods[resource].get(req.method, None)
         if methname is None:
@@ -130,8 +130,9 @@ class Resource(object):
 
         try:
             logging.debug("Dispatching to method %s with "
-                "args=%s, kwargs=%s", methname, args, kwargs)
-            response = method(*args, **kwargs)
+                "args=%s, kwargs=%s", methname, req.urlargs,
+                req.urlvars)
+            response = method(*req.urlargs, **req.urlvars)
         except NotImplementedError:
             logging.debug("Method %s not implemented", methname)
             response = exc.HTTPNotFound()
