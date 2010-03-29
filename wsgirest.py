@@ -36,6 +36,7 @@ class Service(object):
     
     def __init__(self, *resources):
         logging.debug("Registered %d resources", len(resources))
+        self.resources = {}
         self.register(*resources)
     
     def __call__(self, environ, start_response):
@@ -58,7 +59,7 @@ class Service(object):
         :attr:`Resource.uri` attribute; this URI will be set as the key
         for the resource in the :attr:`resources` dictionary.
         """
-        self.resources = dict((r.uri, r) for r in resources)
+        self.resources.update([(r.uri, r) for r in resources])
 
     def dispatch(self, request):
         """Route the *request* to the appropriate resource.
