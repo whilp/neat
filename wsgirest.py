@@ -185,27 +185,27 @@ class Resource(object):
 
     def list(self):
         """List members of a collection."""
-        pass
+        raise NotImplementedError
 
     def create(self):
         """Create a new member of a collection."""
-        pass
+        raise NotImplementedError
 
     def retrieve(self, member):
         """Fetch a member."""
-        pass
+        raise NotImplementedError
 
     def edit(self, member):
         """Edit or update a member."""
-        pass
+        raise NotImplementedError
 
     def delete(self, member):
         """Remove and delete a member."""
-        pass
+        raise NotImplementedError
 
     def replace(self, member):
         """Replace a member."""
-        pass
+        raise NotImplementedError
 
 class Records(Resource):
     uri = "/records"
