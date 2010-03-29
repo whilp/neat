@@ -33,6 +33,17 @@ class Service(object):
     similar functionality). When a resource matches a requested URI, it
     will be instantiated and passed the standard WSGI arguments.
     """
+    methods = {
+        "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
+        "collection": dict(GET="list", POST="create"),
+    }
+    """A nested dictionary mapping HTTP methods to resource methods and types.
+
+    The keys in the toplevel dictionary describes a type of resource
+    (either "member" or "collection"). Those keys point to dictionaries
+    mapping HTTP methods to methods of the :class:`Resource` that are
+    appropriate for the resource type.
+    """
     
     def __init__(self, *resources):
         logging.debug("Registered %d resources", len(resources))
@@ -40,17 +51,54 @@ class Service(object):
         self.register(*resources)
     
     def __call__(self, environ, start_response):
-        """Dispatch to a resource.
+        """Route to a resource.
 
         This method makes the :class:`Service` a valid WSGI application.
-        If :meth:`dispatch` does not find a suitable resource, an
+        If :meth:`route` does not find a suitable resource, an
         :instance:`webob.exc.HTTPNotFound` instance will be returned.
+        After the proper resource is found, :meth:`__call__` calls
+        :meth:`dispatch` to find the appropriate method on the resource.
+        Finally, the resource's method is called with the *environ* and
+        *start_response* arguments and the result is returned.
         """
         req = Request(environ)
-        resource = self.dispatch(req)
+        notfound = ""
+        resource = self.route(req)
+
         if resource is None:
-            return exc.HTTPNotFound()(environ, start_response)
-        return resource(req)(environ, start_response)
+            notfound = "No matching resource"
+        else:
+            resource = resource(req)
+
+        method = self.dispatch(resource)
+        if method is None:
+            notfound = "No matching method"
+
+        if notfound:
+            return exc.HTTPNotFound(notfound)(environ, start_response)
+
+        target = "%s.%s" % (method.im_class.__name__, method.im_func.func_name)
+        try:
+            response = method(*req.urlargs, **req.urlvars)
+            logging.debug("Dispatching to %s with "
+                "args=%s, kwargs=%s", target, req.urlargs,
+                req.urlvars)
+        except NotImplementedError:
+            logging.debug("Resource method not implemented")
+            response = exc.HTTPNotFound()
+        except exc.HTTPException, e:
+            response = e
+
+        if response is None:
+            response = resource.response
+        elif isinstance(response, basestring):
+            try:
+                resource.response.unicode_body = response
+            except TypeError:
+                resource.response.body = response
+            response = resource.response
+
+        return resource.response(environ, start_response)
 
     def register(self, *resources):
         """Register *resources* with the service.
@@ -61,15 +109,15 @@ class Service(object):
         """
         self.resources.update([(r.uri, r) for r in resources])
 
-    def dispatch(self, request):
+    def route(self, request):
         """Route the *request* to the appropriate resource.
 
-        :meth:`dispatch` first checks that the *request*'s PATH_INFO
+        :meth:`route` first checks that the *request*'s PATH_INFO
         falls under the :class:`Serivce`'s :attr:`prefix`. If not,
-        :meth:`dispatch` returns None. Otherwise, :meth:`dispatch` first
+        :meth:`route` returns None. Otherwise, :meth:`route` first
         looks for a resource registered in :attr:`resources` that
         matches PATH_INFO (minus the Service prefix). If no resource
-        matches, :meth:`dispatch` computes the possible parent resource of
+        matches, :meth:`route` computes the possible parent resource of
         the request (using :func:`parent`) and checks again. Finally,
         either the matching resource or None is returned.
         """
@@ -88,9 +136,32 @@ class Service(object):
             resource = self.resources.get(parent(uri), None)
 
         if resource is None:
-            logging.debug("Dispatching request for '%s'", uri)
+            logging.debug("Routing request for '%s'", uri)
 
         return resource
+
+    def dispatch(self, resource):
+        """Dispatch the *request* to the appropriate method on *resource*.
+
+        After :meth:`route` has found the matching resource for a
+        request, :meth:`dispatch` chooses the appropriate method using
+        the :attr:`methods` dictionary and returns it.
+        """
+        req = resource.request
+        req.urlargs, req.urlvars = (), {}
+
+        resourcetype = "collection"
+        if req.path_info != resource.uri:
+            resourcetype = "member"
+            req.urlargs = (req.path_info[len(resource.uri) + 1:],)
+
+        methname = self.methods[resourcetype].get(req.method, None)
+        if methname is None:
+            logging.debug("Method %s not registered", methname)
+            return None
+        method = getattr(resource, methname, None)
+
+        return method
 
 class Resource(object):
     """A WSGI resource.
@@ -105,48 +176,11 @@ class Resource(object):
     parse the Request to determine the appropriate method to call.
     """
     uri = ""
-    methods = {
-        "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
-        "collection": dict(GET="list", POST="create"),
-    }
 
     def __init__(self, request):
         self.request = request
-        self.response = None
-    
-    def __call__(self, environ, start_response):
-        req = self.request
-        req.urlargs, req.urlvars = (), {}
+        self.response = Response()
 
-        resource = "collection"
-        if req.path_info != self.uri:
-            resource = "member"
-            req.urlargs = (req.path_info[len(self.uri) + 1:],)
-
-        methname = self.methods[resource].get(req.method, None)
-        if methname is None:
-            logging.debug("Method %s not registered", methname)
-            return exc.HTTPNotFound()(environ, start_response)
-        method = getattr(self, methname)
-
-        try:
-            logging.debug("Dispatching to method %s with "
-                "args=%s, kwargs=%s", methname, req.urlargs,
-                req.urlvars)
-            response = method(*req.urlargs, **req.urlvars)
-        except NotImplementedError:
-            logging.debug("Method %s not implemented", methname)
-            response = exc.HTTPNotFound()
-        except exc.HTTPException, e:
-            response = e
-
-        if response is None:
-            response = ''
-        if isinstance(response, basestring):
-            response = Response(body=response)
-
-        return response(environ, start_response)
-            
     def list(self):
         """List members of a collection."""
         pass
