@@ -1,4 +1,5 @@
 import logging
+import re
 
 from posixpath import dirname
 
@@ -50,8 +51,7 @@ class Service(object):
     
     def __init__(self, *resources):
         logging.debug("Registered %d resources", len(resources))
-        self.resources = {}
-        self.register(*resources)
+        self.resources = list(resources)
     
     @wsgify
     def __call__(self, req):
@@ -87,18 +87,8 @@ class Service(object):
 
         return response
 
-    def register(self, *resources):
-        """Register *resources* with the service.
-
-        Each resource should implement the API defined in
-        :class:`Resource` and have a :attr:`Resource.uri` attribute.
-        This URI will be set as the key for the resource in the
-        :attr:`resources` dictionary.
-        """
-        self.resources.update([(r.uri, r) for r in resources])
-
-    def route(self, request):
-        """Route the *request* to the appropriate resource.
+    def route(self, req):
+        """Route the *req* to the appropriate resource.
 
         :meth:`route` first checks that the *request*'s PATH_INFO
         falls under the :class:`Serivce`'s :attr:`prefix`. If not,
@@ -109,21 +99,25 @@ class Service(object):
         the request (using :func:`parent`) and checks again. Finally,
         either the matching resource or None is returned.
         """
-        uri = request.path_info
-        if not uri.startswith(self.prefix):
-            logging.debug("Request URI '%s' not in service prefix '%s'",
-                uri, self.prefix)
-            return None
-        uri = uri[len(self.prefix):]
+        matches = {}
+        for resource in self.resources:
+            match = resource.template.match(req.path_info)
+            if match:
+                matches[resource] = match
 
-        # Look up the resource. If we don't find anything the first
-        # time, we might have a request for a specific member, so check
-        # compute its parent and check for that.
-        resource = self.resources.get(uri, None)
-        if resource is None:
-            resource = self.resources.get(self.parent(uri), None)
+        resources = matches.keys()
+        if not resources:
+            resource = None
+        elif len(resources) == 1:
+            resource = resources[0]
+        else:
+            supported = dict((getattr(r, "supported"), r) for r in resources)
+            accept = best_match(supported, req.accept or "*/*")
+            # We need to use .get() here because best_match() might
+            # return '' (if no supported header matches).
+            resource = supported.get(accept, None)
 
-        return resource
+        return req, resource
 
     def dispatch(self, resource):
         """Dispatch to the appropriate method on *resource*.
