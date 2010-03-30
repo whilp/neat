@@ -117,9 +117,13 @@ class Service(object):
             # return '' (if no supported header matches).
             resource = supported.get(accept, None)
 
+        if resource is not None:
+            match = matches[resource]
+            req.urlargs, req.urlvars = match.groups(), match.groupdict()
+
         return req, resource
 
-    def dispatch(self, resource):
+    def dispatch(self, req, resource):
         """Dispatch to the appropriate method on *resource*.
 
         After :meth:`route` has found the matching resource for a
@@ -127,17 +131,12 @@ class Service(object):
         the *resource*'s :attr:`Resource.request` attribute and the
         :attr:`methods` dictionary and returns the matching method.
         """
-        req = resource.request
-        req.urlargs, req.urlvars = (), {}
-
         resourcetype = "collection"
-        if req.path_info != resource.uri:
+        if req.urlargs or req.urlvars:
             resourcetype = "member"
-            req.urlargs = (req.path_info[len(resource.uri) + 1:],)
 
         methname = self.methods[resourcetype].get(req.method, None)
         if methname is None:
-            logging.debug("Method %s not registered", methname)
             return None
         method = getattr(resource, methname, None)
 
