@@ -20,15 +20,11 @@ class Service(object):
     may be passed as arguments to the constructor. Otherwise, the
     :meth:`register` method may be called later to add other resources.
     """
-    resources = {}
-    """A dictionary mapping URIs to resources.
+    resources = []
+    """A list of registered resource instances.
 
-    Each key should be a URI that will be matched against the HTTP
-    request's PATH_INFO environment variable. The values should be
-    subclasses of :class:`Resource` (or something else that implements
-    similar functionality). When a resource matches a requested URI, it
-    will be instantiated and passed the standard WSGI arguments. Note
-    that the values of this dictionary should be classes, not instances.
+    Each resource should either subclass :class:`Resource` or implement
+    its interface.
     """
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
@@ -53,9 +49,9 @@ class Service(object):
 
         *req* is a :class:`webob.Request` instance, though
         :class:`webob.dec.wsgify` will automatically build *req* if
-		passed the standard WSGI arguments (*environ*,
-		*start_response*). :meth:`__call__` looks up the correct
-		resource using :meth:`map`.
+        passed the standard WSGI arguments (*environ*,
+        *start_response*). :meth:`__call__` looks up the correct
+        resource using :meth:`map`.
         """
         req, resource = self.map(req)
 
