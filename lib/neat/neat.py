@@ -55,16 +55,31 @@ class Service(object):
     
     @wsgify
     def __call__(self, req):
-        """Route to a resource.
+        """Pass the request to a resource and return the response.
 
-        This method makes the :class:`Service` a valid WSGI application.
-        If :meth:`route` does not find a suitable resource, an
-        :class:`webob.exc.HTTPNotFound` instance will be returned.
-        After the proper resource is found, :meth:`__call__` calls
-        :meth:`dispatch` to find the appropriate method on the resource.
-        Finally, the resource's method is called with the *environ* and
-        *start_response* arguments and the resulting WSGI application is
-        returned.
+        *req* is a :class:`webob.Request` instance, though
+        :class:`webob.dec.wsgify` will automatically build *req* if
+		passed the standard WSGI arguments (*environ*,
+		*start_response*). :meth:`__call__` looks up the correct
+		resource using :meth:`map`.
+        """
+        req, resource = self.map(req)
+
+        # XXX: It'd be nice to log a unique name for the method.
+
+        try:
+            response = resource(req)
+        except NotImplementedError:
+            raise HTTPNotfound("Not implemented")
+
+        return response
+
+    def map(self, req):
+        """Map a request.
+
+        :meth:`map` chooses the best resource from :attr:`resources` to
+        serve *req* and returns a (*req*, *func*) tuple, where *func* is a
+        callable that will accept *req* as its argument.
         """
         req, resource = self.route(req)
         if resource is None:
@@ -74,30 +89,17 @@ class Service(object):
         if method is None:
             raise HTTPNotFound("No matching method")
 
-        target = "%s.%s.%s" % (method.im_class.__module__,
-            method.im_class.__name__, method.im_func.func_name)
-        logging.debug("Dispatching to %s with "
-            "args=%s, kwargs=%s", target, req.urlargs,
-            req.urlvars)
-
-        try:
-            response = method(req)
-        except NotImplementedError:
-            raise HTTPNotfound("Not implemented")
-
-        return response
+        return req, method
 
     def route(self, req):
-        """Route the *req* to the appropriate resource.
+        """Choose the best resource to serve *req*.
 
-        :meth:`route` first checks that the *request*'s PATH_INFO
-        falls under the :class:`Serivce`'s :attr:`prefix`. If not,
-        :meth:`route` returns None. Otherwise, :meth:`route` then
-        looks for a resource registered in :attr:`resources` that
-        matches PATH_INFO (minus the Service prefix). If no resource
-        matches, :meth:`route` computes the possible parent resource of
-        the request (using :func:`parent`) and checks again. Finally,
-        either the matching resource or None is returned.
+        :meth:`route` iterates through the list of registered resources.
+        If more than one resource has an :attr:`Resource.template`
+        attribute that matches :attr:`Request.path_info`, the resource
+        with the :attr:`Resource.supported` MIME type that best matches
+        :attr:`Request.accept` wins. :meth:`route` returns (*req*,
+		*resource*), where *resource* is the matching :attr:`Resource`.
         """
         matches = {}
         for resource in self.resources:
@@ -111,7 +113,7 @@ class Service(object):
         elif len(resources) == 1:
             resource = resources[0]
         else:
-            supported = dict((getattr(r, "supported"), r) for r in resources)
+            supported = dict((r.supported, r) for r in resources)
             accept = best_match(supported, req.accept or "*/*")
             # We need to use .get() here because best_match() might
             # return '' (if no supported header matches).
@@ -124,12 +126,14 @@ class Service(object):
         return req, resource
 
     def dispatch(self, req, resource):
-        """Dispatch to the appropriate method on *resource*.
+        """Choose the best resource method of *resource* to serve *req*.
 
-        After :meth:`route` has found the matching resource for a
-        request, :meth:`dispatch` chooses the appropriate method using
-        the *resource*'s :attr:`Resource.request` attribute and the
-        :attr:`methods` dictionary and returns the matching method.
+        If *req* has either :attr:`Request.urlargs` or :attr:`Request.urlvars`,
+        the request is assumed to be for a resource member; if not, it
+        is a request for a collection. :meth:`dispatch` uses this
+        information to choose the proper :class:`Resource` method from
+        :attr:`methods`. Returns (*req*, *method*), where *method* is a
+        method on a registered :class:`Resource` instance.
         """
         resourcetype = "collection"
         if req.urlargs or req.urlvars:
@@ -158,10 +162,10 @@ class Resource(object):
     """
     template = ""
     """A URI template."""
-    supported = []
-    """A list of supported MIME types."""
+    supported = ""
+    """The MIME type supported by this resource."""
 
-    def __init__(self, uri="", supported=[]):
+    def __init__(self, uri="", supported=""):
         if uri:
             self.uri = re.compile(uri)
         if supported:
