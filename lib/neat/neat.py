@@ -140,7 +140,7 @@ class Service(object):
             return None
         method = getattr(resource, methname, None)
 
-        return method
+        return req, method
 
 class Resource(object):
     """A REST resource.
