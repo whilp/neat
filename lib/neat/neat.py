@@ -66,7 +66,6 @@ class Service(object):
         *start_response* arguments and the resulting WSGI application is
         returned.
         """
-        notfound = ""
         req, resource = self.route(req)
         if resource is None:
             raise HTTPNotFound("No matching resource")
@@ -82,7 +81,7 @@ class Service(object):
             req.urlvars)
 
         try:
-            req = method(req)
+            response = method(req)
         except NotImplementedError:
             raise HTTPNotfound("Not implemented")
 
