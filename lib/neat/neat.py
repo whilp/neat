@@ -147,18 +147,18 @@ class Service(object):
         return req, method
 
 class Resource(object):
-    """A REST resource.
+    """A resource.
 
-    A :class:`Resource` instance or subclass allows standard REST-like
-    access to a HTTP resource. The methods implemented here correspond
-    to the protocol operations defined in the `Atom Publishing Protocol
+    The :class:`Resource` models real data and state stored
+    on the server and supports client interactions similar
+    to those defined in the `Atom Publishing Protocol
     <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
+    :class:`Resource` instances can be registered with a
+    :class:`Service` to provide access to the resource model over WSGI
+    (and therefore HTTP).
 
-    On instantiation, a :class:`webob.Request` instance should be passed
-    to the :class:`Resource`. The REST methods may then be called with
-    arguments and keyword arguments parsed from the Request instance.
-    These methods return a :instance:`webob.Response` instance (which is
-    a WSGI application).
+    A :class:`Resource` instance's methods should correspond to those registered
+    in the :attr:`Service.methods` dictionary.
     """
     template = ""
     """A URI template."""
@@ -171,27 +171,27 @@ class Resource(object):
         if supported:
             self.supported = supported
 
-    def list(self):
+    def list(self, req):
         """List members of a collection."""
         raise NotImplementedError
 
-    def create(self):
+    def create(self, req):
         """Create a new member of a collection."""
         raise NotImplementedError
 
-    def retrieve(self, member):
+    def retrieve(self, req):
         """Fetch a member."""
         raise NotImplementedError
 
-    def edit(self, member):
+    def edit(self, req):
         """Edit or update a member."""
         raise NotImplementedError
 
-    def delete(self, member):
+    def delete(self, req):
         """Remove and delete a member."""
         raise NotImplementedError
 
-    def replace(self, member):
+    def replace(self, req):
         """Replace a member."""
         raise NotImplementedError
 
