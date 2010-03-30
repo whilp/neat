@@ -1,7 +1,10 @@
 import logging
 
 from posixpath import dirname
+
 from webob import Response, Request, exc
+from webob.dec import wsgify
+from webob.exc import HTTPNotFound
 
 class Service(object):
     """A WSGI service.
@@ -50,7 +53,8 @@ class Service(object):
         self.resources = {}
         self.register(*resources)
     
-    def __call__(self, environ, start_response):
+    @wsgify
+    def __call__(self, req):
         """Route to a resource.
 
         This method makes the :class:`Service` a valid WSGI application.
@@ -62,48 +66,27 @@ class Service(object):
         *start_response* arguments and the resulting WSGI application is
         returned.
         """
-        req = Request(environ)
         notfound = ""
-        resource = self.route(req)
-
+        req, resource = self.route(req)
         if resource is None:
-            notfound = "No matching resource"
-        else:
-            resource = resource(req)
+            raise HTTPNotFound("No matching resource")
 
-        method = self.dispatch(resource)
+        req, method = self.dispatch(req, resource)
         if method is None:
-            notfound = "No matching method"
-
-        if notfound:
-            return exc.HTTPNotFound(notfound)(environ, start_response)
+            raise HTTPNotFound("No matching method")
 
         target = "%s.%s.%s" % (method.im_class.__module__,
             method.im_class.__name__, method.im_func.func_name)
+        logging.debug("Dispatching to %s with "
+            "args=%s, kwargs=%s", target, req.urlargs,
+            req.urlvars)
+
         try:
-            response = method(*req.urlargs, **req.urlvars)
-            logging.debug("Dispatching to %s with "
-                "args=%s, kwargs=%s", target, req.urlargs,
-                req.urlvars)
+            req = method(req)
         except NotImplementedError:
-            logging.debug("%s not implemented", target)
-            response = exc.HTTPNotFound()
-        except exc.HTTPException, e:
-            response = e
+            raise HTTPNotfound("Not implemented")
 
-        if response is None:
-            response = resource.response
-        elif isinstance(response, basestring):
-            try:
-                resource.response.unicode_body = response
-            except TypeError:
-                resource.response.body = response
-            response = resource.response
-
-        if response.request is None:
-            response.request = req
-
-        return response(environ, start_response)
+        return response
 
     def register(self, *resources):
         """Register *resources* with the service.
