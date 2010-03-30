@@ -157,13 +157,16 @@ class Resource(object):
     These methods return a :instance:`webob.Response` instance (which is
     a WSGI application).
     """
-    uri = ""
-    """The :class:`Resource`'s URI."""
+    template = ""
+    """A URI template."""
+    supported = []
+    """A list of supported MIME types."""
 
-    def __init__(self, request, response=None):
-        self.request = request
-        self.response = response is None and Response() or response
-        self.response.request = self.request
+    def __init__(self, uri="", supported=[]):
+        if uri:
+            self.uri = re.compile(uri)
+        if supported:
+            self.supported = supported
 
     def list(self):
         """List members of a collection."""
