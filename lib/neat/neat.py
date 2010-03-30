@@ -143,13 +143,6 @@ class Service(object):
 
         return method
 
-    def parent(self, uri):
-        """Return the parent of a URI.
-
-        Here, a parent URI is similar to a POSIX parent directory.
-        """
-        return dirname(uri)
-
 class Resource(object):
     """A REST resource.
 
