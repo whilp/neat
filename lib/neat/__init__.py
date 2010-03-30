@@ -15,7 +15,7 @@ __classifiers__ = []
 __keywords__ = ""
 
 __requires__ = [
-	"WebOb",
+    "WebOb",
 ]
 
 # The following is modeled after the ISC license.
