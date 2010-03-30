@@ -20,12 +20,6 @@ class Service(object):
     may be passed as arguments to the constructor. Otherwise, the
     :meth:`register` method may be called later to add other resources.
     """
-    prefix = ""
-    """URI prefix under which the Service's resources can be found.
-
-    Request URIs that do not match this prefix will raise
-    :class:`webob.exc.HTTPNotFound` errors.
-    """
     resources = {}
     """A dictionary mapping URIs to resources.
 
