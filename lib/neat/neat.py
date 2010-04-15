@@ -75,6 +75,24 @@ class Service(object):
 
         return match
 
+    def url(self, collection, *args, **kwargs):
+        """Generate a URL for *collection*.
+
+        *collection* is a string matching a :attr:`~Resource.collection`
+        attribute of a :class:`Resource` registered with the :class:`Service`.
+        *args* and *kwargs* are passed to :class:`Resource.url`. Returns None if
+        no :class:`Resource` matches.
+        """
+        resource = None
+        for resource in self.resources:
+            if resource.collection == collection:
+                break
+
+        if resource is None:
+            return None
+
+        return resource.url(*args, **kwargs)
+
 class Resource(object):
     """A resource.
 
@@ -195,8 +213,22 @@ class Resource(object):
 
         return _method, args, kwargs
 
-    def url(self, *args, **kwargs):
-        raise NotImplementedError
+    def url(self, member=None, **kwargs):
+        """Generate a URL for the resource.
+
+        If *member* is not None, a URL pointing to the member will be generated.
+        Otherwise, the URL will point to the collection. If *kwargs* is present,
+        it will be urlencoded and appended to the resulting URL as GET
+        parameters.
+        """
+        url = self.collection
+        if member is not None:
+            url = '/'.join((url, member))
+
+        if kwargs:
+            url = '?'.join((url, urlencode(kwargs)))
+
+        return url
 
     def list(self, req, *args, **kwargs):
         """List members of a collection."""
