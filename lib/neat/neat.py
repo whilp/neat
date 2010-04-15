@@ -21,14 +21,13 @@ class Service(object):
     """A WSGI service.
 
     Services route HTTP requests to resources (usually subclasses of
-    :class:`Resource`) registered with the service. :class:`Service`
-    is a valid WSGI application (see :meth:`__call__`); the registered
-    resources should provide methods that return valid WSGI applications
-    (see :attr:`methods`).
+    :class:`Resource`) registered with the service. :class:`Service` is a WSGI
+    application (see :meth:`__call__`); the registered resources should provide
+    methods that also return WSGI applications.
 
-    When instantiating a :class:`Service`, the uninstantiated resources
-    may be passed as arguments to the constructor. Otherwise, the
-    :meth:`register` method may be called later to add other resources.
+    When instantiating a :class:`Service`, the resource objects may be passed as
+    arguments to the constructor.
+
     """
     resources = []
     """A list of registered resource instances.
@@ -45,10 +44,9 @@ class Service(object):
         """Pass the request to a resource and return the response.
 
         *req* is a :class:`webob.Request` instance, though
-        :class:`webob.dec.wsgify` will automatically build *req* if
-        passed the standard WSGI arguments (*environ*,
-        *start_response*). :meth:`__call__` looks up the correct
-        resource using :meth:`match`.
+        :class:`webob.dec.wsgify` will automatically build *req* if passed the
+        standard WSGI arguments (*environ*, *start_response*). :meth:`__call__`
+        looks up the correct resource using :meth:`match`.
         """
         match = self.match(req)
         if match is None:
@@ -66,10 +64,8 @@ class Service(object):
     def match(self, req):
         """Match a request to a resource.
 
-        Returns a tuple (resource, args, kwargs); *resource* is (usually) a
-        :class:`Resource` registered in :attr:`resources`, *args* is a tuple of
-        positional arguments and *kwargs* is a dictionary of keyword arguments.
-        First match wins.
+        Returns the output of the first :meth:`Resource.match` call that does
+        not return None. First match wins.
         """
         match = None
         for resource in self.resources:
@@ -86,33 +82,33 @@ class Resource(object):
     on the server and supports client interactions similar
     to those defined in the `Atom Publishing Protocol
     <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
-    :class:`Resource` instances can be registered with a
-    :class:`Service` to provide access to the resource model over WSGI
-    (and therefore HTTP).
+    :class:`Resource` instances can be registered with a :class:`Service` to
+    provide access to the resource model over WSGI (and therefore HTTP).
 
     A :class:`Resource` instance's methods should correspond to those registered
-    in the :attr:`Service.methods` dictionary.
+    in the :attr:`methods` dictionary.
     """
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
         "collection": dict(GET="list", POST="create"),
     }
-    """A nested dictionary mapping HTTP methods to resource methods and types.
+    """A nested dictionary mapping HTTP methods to resource types and methods.
 
-    The keys in the toplevel dictionary describes a type of resource
-    (either "member" or "collection"). Those keys point to dictionaries
-    mapping HTTP methods to the names of methods that will be called on
-    registered resources. These methods should return valid WSGI
-    applications.
+    The keys in the toplevel dictionary describe a type of resource (either
+    "member" or "collection"). Those keys point to dictionaries mapping HTTP
+    methods to the names of methods that will be called on the resource.
+    These methods should return WSGI applications.
     """
     mimetypes = {
     }
     """Dictionary of supported mimetypes.
 
-    Values in this dictionary will be suffixed to base method names (see :attr:`methods`)
-    when mapping requests to resource methods (see :meth:`match`).
+    Values in this dictionary will be appended to base method names (see
+    :attr:`methods`) when mapping requests to resource methods (see
+    :meth:`match`).
     """
     collection = ""
+    """The collection modeled by this resource."""
 
     def __init__(self, collection="", mimetypes={}):
         if collection:
@@ -135,6 +131,18 @@ class Resource(object):
         matching method on this resource; *args* is a tuple of positional
         arguments; *kwargs* is a dictionary of keyword arguments. *args* and
         *kwargs* can then be passed to *method* by the caller.
+
+        A resource matches a request when: the first element in its path
+        (:data:`req.path_info`) matches :attr:`collection; its HTTP method
+        (:data:`req.method`) maps to a resource method in :attr:`methods`; and
+        its Accept header (:data:`req.accept` or "*/*") matches a mimetype in
+        :attr:`mimetypes`. If the request is for a member of the collection, the
+        member portion of the path will be included in *args*. If any of the
+        above criteria are not satisfied, :meth:`match` returns None.
+
+        Since resource matching is controlled by the resource (and not the
+        service), different resources can implement different strategies as long
+        as they preserve the basic signature.
         """
         args = (); kwargs = {}
         path = req.path_info.strip('/')
@@ -239,7 +247,7 @@ def lala():
     s = Service(
         Records(collection="records")
     )
-    request = Request.blank("/records/1")
+    request = Request.blank("/records/2")
     print ">>> request:\n", request
     response = request.get_response(s)
 
