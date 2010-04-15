@@ -8,6 +8,11 @@ from webob.dec import wsgify
 from webob.exc import HTTPNotFound
 
 try:
+    import json
+except ImportError:
+    import simplejson as json
+
+try:
     from mimeparse import best_match
 except ImportError:
     best_match = False
@@ -45,7 +50,10 @@ class Service(object):
         *start_response*). :meth:`__call__` looks up the correct
         resource using :meth:`match`.
         """
-        method, args, kwargs = self.match(req)
+        match = self.match(req)
+        if match is None:
+            raise HTTPNotFound("Not implemented")
+        method, args, kwargs = match
 
         # XXX: It'd be nice to log a unique name for the method.
         try:
@@ -106,6 +114,20 @@ class Resource(object):
     """
     collection = ""
 
+    def __init__(self, collection="", mimetypes={}):
+        if collection:
+            self.collection = collection
+        if mimetypes:
+            self.mimetypes = mimetypes
+
+        try:
+            self.setup()
+        except NotImplementedError:
+            pass
+
+    def setup(self):
+        raise NotImplementedError
+
     def match(self, req):
         """Match the resource to a request.
 
@@ -118,6 +140,8 @@ class Resource(object):
         path = req.path_info.strip('/')
         collection, _, resource = path.partition('/')
         if collection != self.collection:
+            logging.debug("Collection '%s' does not match request path: '%s'",
+                self.collection, path)
             return None
         elif resource:
             methodskey = "member"
@@ -129,12 +153,18 @@ class Resource(object):
         method = methods.get(req.method, None)
 
         if method is None:
+            logging.debug("Request path '%s' did not match any base method", path)
             return None
 
-        if best_match:
-            mimetype = best_match(self.mimetypes, req.accept)
+        logging.debug("Request path '%s' matched base method '%s'", path, method)
+
+        accept = "*/*"
+        if req.accept:
+            accept = req.accept
+        if best_match and self.mimetypes:
+            mimetype = best_match(self.mimetypes, accept)
         else:
-            full, _, params = req.accept.partition(';')
+            full, _, params = accept.partition(';')
             full = full.strip()
             if full == '*': full = "*/*"
             mimetype = full
@@ -145,12 +175,17 @@ class Resource(object):
         elif suffix:
             method = '_'.join((method, suffix))
 
-        method = getattr(self, method, None)
+        _method = getattr(self, method, None)
 
-        if not callable(method):
+        if not callable(_method):
+            logging.debug("Request Accept header '%s' did not match any method",
+                acccept)
             return None
 
-        return method, args, kwargs
+        logging.debug("Request Accept header '%s' matched method '%s'",
+            accept, method)
+
+        return _method, args, kwargs
 
     def url(self, *args, **kwargs):
         raise NotImplementedError
@@ -180,26 +215,35 @@ class Resource(object):
         raise NotImplementedError
 
 class Records(Resource):
-    uri = "/records"
+
+    def setup(self):
+        self.data = {
+            "1": {"name": "one"},
+            "2": {"name": "two"},
+            "3": {"name": "three"},
+        }
+        self.mimetypes['*/*'] = "json"
+
+    def list(self, req):
+        return self.data
+
+    def retrieve(self, req, member):
+        return self.data.get(member)
+
+    def retrieve_json(self, req, member):
+        req.response.body = json.dumps(self.retrieve(req, member))
+        req.response.content_type = "application/javascript"
 
 def lala():
     logging.basicConfig(level=logging.DEBUG)
     s = Service(
-        Records,
+        Records(collection="records")
     )
-    logging.basicConfig()
     request = Request.blank("/records/1")
+    print ">>> request:\n", request
     response = request.get_response(s)
-    print response
 
-    service = Service()
-    lambda register = template, resources, *cls: \
-        resources.extend(r(template) for r in cls)
-    register("/records/(?P<member>\S+)", service.resources, JSONRecords))
-
-    service = Service(
-        JSONRecords("/records/(?P<member>\S+)")
-    )
+    print ">>> response:\n", response
 
 def serve():
     from wsgiref.simple_server import make_server
