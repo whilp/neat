@@ -7,6 +7,11 @@ from webob import Response, Request, exc
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
 
+try:
+    from mimeparse import best_match
+except ImportError:
+    best_match = False
+
 class Service(object):
     """A WSGI service.
 
@@ -92,6 +97,14 @@ class Resource(object):
     registered resources. These methods should return valid WSGI
     applications.
     """
+    mimetypes = {
+    }
+    """Dictionary of supported mimetypes.
+
+    Values in this dictionary will be suffixed to base method names (see :attr:`methods`)
+    when mapping requests to resource methods (see :meth:`match`).
+    """
+    collection = ""
 
     def match(self, req):
         """Match the resource to a request.
@@ -101,10 +114,46 @@ class Resource(object):
         arguments; *kwargs* is a dictionary of keyword arguments. *args* and
         *kwargs* can then be passed to *method* by the caller.
         """
+        args = (); kwargs = {}
+        path = req.path_info.strip('/')
+        collection, _, resource = path.partition('/')
+        if collection != self.collection:
+            return None
+        elif resource:
+            methodskey = "member"
+            args = (resource,)
+        else:
+            methodskey = "collection"
+
+        methods = self.methods.get(methodskey)
+        method = methods.get(req.method, None)
+
+        if method is None:
+            return None
+
+        if best_match:
+            mimetype = best_match(self.mimetypes, req.accept)
+        else:
+            full, _, params = req.accept.partition(';')
+            full = full.strip()
+            if full == '*': full = "*/*"
+            mimetype = full
+
+        suffix = self.mimetypes.get(mimetype, None)
+        if suffix is None:
+            return None
+        elif suffix:
+            method = '_'.join((method, suffix))
+
+        method = getattr(self, method, None)
+
+        if not callable(method):
+            return None
+
         return method, args, kwargs
 
     def url(self, *args, **kwargs):
-        pass
+        raise NotImplementedError
 
     def list(self, req, *args, **kwargs):
         """List members of a collection."""
