@@ -38,17 +38,33 @@ class Service(object):
         :class:`webob.dec.wsgify` will automatically build *req* if
         passed the standard WSGI arguments (*environ*,
         *start_response*). :meth:`__call__` looks up the correct
-        resource using :meth:`map`.
+        resource using :meth:`match`.
         """
-        resource, args, kwargs = self.match(req)
+        method, args, kwargs = self.match(req)
 
         # XXX: It'd be nice to log a unique name for the method.
         try:
-            response = resource(req, *args, **kwargs)
+            response = method(req, *args, **kwargs)
         except NotImplementedError:
             raise HTTPNotfound("Not implemented")
 
         return response
+
+    def match(self, req):
+        """Match a request to a resource.
+
+        Returns a tuple (resource, args, kwargs); *resource* is (usually) a
+        :class:`Resource` registered in :attr:`resources`, *args* is a tuple of
+        positional arguments and *kwargs* is a dictionary of keyword arguments.
+        First match wins.
+        """
+        match = None
+        for resource in self.resources:
+            match = resource.match(req)
+            if match is not None:
+                break
+
+        return match
 
 class Resource(object):
     """A resource.
@@ -64,7 +80,6 @@ class Resource(object):
     A :class:`Resource` instance's methods should correspond to those registered
     in the :attr:`Service.methods` dictionary.
     """
-    """The MIME type supported by this resource."""
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
         "collection": dict(GET="list", POST="create"),
@@ -79,7 +94,14 @@ class Resource(object):
     """
 
     def match(self, req):
-        return args, kwargs
+        """Match the resource to a request.
+
+        Return (method, args, kwargs) if the request matches. *method* is the
+        matching method on this resource; *args* is a tuple of positional
+        arguments; *kwargs* is a dictionary of keyword arguments. *args* and
+        *kwargs* can then be passed to *method* by the caller.
+        """
+        return method, args, kwargs
 
     def url(self, *args, **kwargs):
         pass
