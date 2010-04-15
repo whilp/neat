@@ -91,6 +91,16 @@ class Service(object):
         :attr:`Request.accept` wins. :meth:`route` returns (*req*,
 		*resource*), where *resource* is the matching :attr:`Resource`.
         """
+		# Find resources with matching collections.
+		matches = {}
+		for resource in self.resources:
+			match = resource.collection.match(req.path_info)
+			if match:
+				matches[resource] = match
+
+		for resource, match in
+
+
         matches = {}
         for resource in self.resources:
             match = resource.template.match(req.path_info)
@@ -150,16 +160,22 @@ class Resource(object):
     A :class:`Resource` instance's methods should correspond to those registered
     in the :attr:`Service.methods` dictionary.
     """
-    template = ""
-    """A URI template."""
+    collection = r""
+    member = r""
     supported = ""
     """The MIME type supported by this resource."""
 
-    def __init__(self, uri="", supported=""):
-        if uri:
-            self.uri = re.compile(uri)
+    def __init__(self, collection=r"", member=r"", supported="", anchor=True):
+        if collection:
+            self.collection = collection
+        if member:
+            self.member = member
         if supported:
             self.supported = supported
+
+        compilere = lambda x: re.compile((anchor and "^%s$" or "%s") % x)
+        self.collection = compilere(self.collection)
+        self.member = compilere(self.member)
 
     def list(self, req):
         """List members of a collection."""
@@ -197,6 +213,15 @@ def lala():
     request = Request.blank("/records/1")
     response = request.get_response(s)
     print response
+
+    service = Service()
+    lambda register = template, resources, *cls: \
+        resources.extend(r(template) for r in cls)
+    register("/records/(?P<member>\S+)", service.resources, JSONRecords))
+
+    service = Service(
+        JSONRecords("/records/(?P<member>\S+)")
+    )
 
 def serve():
     from wsgiref.simple_server import make_server
