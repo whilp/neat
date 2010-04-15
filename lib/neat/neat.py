@@ -222,37 +222,6 @@ class Resource(object):
         """Replace a member."""
         raise NotImplementedError
 
-class Records(Resource):
-
-    def setup(self):
-        self.data = {
-            "1": {"name": "one"},
-            "2": {"name": "two"},
-            "3": {"name": "three"},
-        }
-        self.mimetypes['*/*'] = "json"
-
-    def list(self, req):
-        return self.data
-
-    def retrieve(self, req, member):
-        return self.data.get(member)
-
-    def retrieve_json(self, req, member):
-        req.response.body = json.dumps(self.retrieve(req, member))
-        req.response.content_type = "application/javascript"
-
-def lala():
-    logging.basicConfig(level=logging.DEBUG)
-    s = Service(
-        Records(collection="records")
-    )
-    request = Request.blank("/records/2")
-    print ">>> request:\n", request
-    response = request.get_response(s)
-
-    print ">>> response:\n", response
-
 def serve():
     from wsgiref.simple_server import make_server
 
@@ -266,5 +235,3 @@ if __name__ == "__main__":
 
     if len(sys.argv) >= 2 and sys.argv[1] == "serve":
         serve()
-    else:
-        lala()
