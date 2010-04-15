@@ -26,19 +26,6 @@ class Service(object):
     Each resource should either subclass :class:`Resource` or implement
     its interface.
     """
-    methods = {
-        "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
-        "collection": dict(GET="list", POST="create"),
-    }
-    """A nested dictionary mapping HTTP methods to resource methods and types.
-
-    The keys in the toplevel dictionary describes a type of resource
-    (either "member" or "collection"). Those keys point to dictionaries
-    mapping HTTP methods to the names of methods that will be called on
-    registered resources. These methods should return valid WSGI
-    applications.
-    """
-    
     def __init__(self, *resources):
         logging.debug("Registered %d resources", len(resources))
         self.resources = list(resources)
@@ -53,98 +40,15 @@ class Service(object):
         *start_response*). :meth:`__call__` looks up the correct
         resource using :meth:`map`.
         """
-        req, resource = self.map(req)
+        resource, args, kwargs = self.match(req)
 
         # XXX: It'd be nice to log a unique name for the method.
-
         try:
-            response = resource(req)
+            response = resource(req, *args, **kwargs)
         except NotImplementedError:
             raise HTTPNotfound("Not implemented")
 
         return response
-
-    def map(self, req):
-        """Map a request.
-
-        :meth:`map` chooses the best resource from :attr:`resources` to
-        serve *req* and returns a (*req*, *func*) tuple, where *func* is a
-        callable that will accept *req* as its argument.
-        """
-        req, resource = self.route(req)
-        if resource is None:
-            raise HTTPNotFound("No matching resource")
-
-        req, method = self.dispatch(req, resource)
-        if method is None:
-            raise HTTPNotFound("No matching method")
-
-        return req, method
-
-    def route(self, req):
-        """Choose the best resource to serve *req*.
-
-        :meth:`route` iterates through the list of registered resources.
-        If more than one resource has an :attr:`Resource.template`
-        attribute that matches :attr:`Request.path_info`, the resource
-        with the :attr:`Resource.supported` MIME type that best matches
-        :attr:`Request.accept` wins. :meth:`route` returns (*req*,
-		*resource*), where *resource* is the matching :attr:`Resource`.
-        """
-		# Find resources with matching collections.
-		matches = {}
-		for resource in self.resources:
-			match = resource.collection.match(req.path_info)
-			if match:
-				matches[resource] = match
-
-		for resource, match in
-
-
-        matches = {}
-        for resource in self.resources:
-            match = resource.template.match(req.path_info)
-            if match:
-                matches[resource] = match
-
-        resources = matches.keys()
-        if not resources:
-            resource = None
-        elif len(resources) == 1:
-            resource = resources[0]
-        else:
-            supported = dict((r.supported, r) for r in resources)
-            accept = best_match(supported, req.accept or "*/*")
-            # We need to use .get() here because best_match() might
-            # return '' (if no supported header matches).
-            resource = supported.get(accept, None)
-
-        if resource is not None:
-            match = matches[resource]
-            req.urlargs, req.urlvars = match.groups(), match.groupdict()
-
-        return req, resource
-
-    def dispatch(self, req, resource):
-        """Choose the best resource method of *resource* to serve *req*.
-
-        If *req* has either :attr:`Request.urlargs` or :attr:`Request.urlvars`,
-        the request is assumed to be for a resource member; if not, it
-        is a request for a collection. :meth:`dispatch` uses this
-        information to choose the proper :class:`Resource` method from
-        :attr:`methods`. Returns (*req*, *method*), where *method* is a
-        method on a registered :class:`Resource` instance.
-        """
-        resourcetype = "collection"
-        if req.urlargs or req.urlvars:
-            resourcetype = "member"
-
-        methname = self.methods[resourcetype].get(req.method, None)
-        if methname is None:
-            return None
-        method = getattr(resource, methname, None)
-
-        return req, method
 
 class Resource(object):
     """A resource.
@@ -160,44 +64,47 @@ class Resource(object):
     A :class:`Resource` instance's methods should correspond to those registered
     in the :attr:`Service.methods` dictionary.
     """
-    collection = r""
-    member = r""
-    supported = ""
     """The MIME type supported by this resource."""
+    methods = {
+        "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
+        "collection": dict(GET="list", POST="create"),
+    }
+    """A nested dictionary mapping HTTP methods to resource methods and types.
 
-    def __init__(self, collection=r"", member=r"", supported="", anchor=True):
-        if collection:
-            self.collection = collection
-        if member:
-            self.member = member
-        if supported:
-            self.supported = supported
+    The keys in the toplevel dictionary describes a type of resource
+    (either "member" or "collection"). Those keys point to dictionaries
+    mapping HTTP methods to the names of methods that will be called on
+    registered resources. These methods should return valid WSGI
+    applications.
+    """
 
-        compilere = lambda x: re.compile((anchor and "^%s$" or "%s") % x)
-        self.collection = compilere(self.collection)
-        self.member = compilere(self.member)
+    def match(self, req):
+        return args, kwargs
 
-    def list(self, req):
+    def url(self, *args, **kwargs):
+        pass
+
+    def list(self, req, *args, **kwargs):
         """List members of a collection."""
         raise NotImplementedError
 
-    def create(self, req):
+    def create(self, req, *args, **kwargs):
         """Create a new member of a collection."""
         raise NotImplementedError
 
-    def retrieve(self, req):
+    def retrieve(self, req, *args, **kwargs):
         """Fetch a member."""
         raise NotImplementedError
 
-    def edit(self, req):
+    def edit(self, req, *args, **kwargs):
         """Edit or update a member."""
         raise NotImplementedError
 
-    def delete(self, req):
+    def delete(self, req, *args, **kwargs):
         """Remove and delete a member."""
         raise NotImplementedError
 
-    def replace(self, req):
+    def replace(self, req, *args, **kwargs):
         """Replace a member."""
         raise NotImplementedError
 
