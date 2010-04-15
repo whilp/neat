@@ -11,7 +11,7 @@ libdir = "lib"
 
 sys.path.insert(0, libdir)
 
-import project as pkg
+import neat as pkg
 
 setup_options = {
     "name": pkg.__project__,
