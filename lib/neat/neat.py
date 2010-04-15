@@ -24,14 +24,15 @@ class Service(object):
 
     When instantiating a :class:`Service`, the resource objects may be passed as
     arguments to the constructor.
-
     """
+
     resources = []
     """A list of registered resource instances.
 
     Each resource should either subclass :class:`Resource` or implement
     its interface.
     """
+
     def __init__(self, *resources):
         logging.debug("Registered %d resources", len(resources))
         self.resources = list(resources)
@@ -103,6 +104,7 @@ class Resource(object):
     A :class:`Resource` instance's methods should correspond to those registered
     in the :attr:`methods` dictionary.
     """
+
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
         "collection": dict(GET="list", POST="create"),
@@ -114,6 +116,7 @@ class Resource(object):
     methods to the names of methods that will be called on the resource.
     These methods should return WSGI applications.
     """
+
     mimetypes = {
     }
     """Dictionary of supported mimetypes.
@@ -122,6 +125,7 @@ class Resource(object):
     :attr:`methods`) when mapping requests to resource methods (see
     :meth:`match`).
     """
+
     collection = ""
     """The collection modeled by this resource."""
 
@@ -137,6 +141,11 @@ class Resource(object):
             pass
 
     def setup(self):
+        """Set up the resource.
+
+        Provided as a convenience so that subclasses don't have to override
+        :meth:`__init__`.
+        """
         raise NotImplementedError
 
     def match(self, req):
