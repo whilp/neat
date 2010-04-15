@@ -1,9 +1,6 @@
 import logging
-import re
 
-from posixpath import dirname
-
-from webob import Response, Request, exc
+from webob import Response, Request
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
 
