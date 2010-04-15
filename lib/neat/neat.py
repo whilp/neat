@@ -14,6 +14,8 @@ try:
 except ImportError:
     best_match = False
 
+__all__ = ["Resource", "Service"]
+
 class Service(object):
     """A WSGI service.
 
