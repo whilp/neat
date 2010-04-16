@@ -50,7 +50,7 @@ class TestStack(AppTest):
 
         service = Service(
             Empty(),
-			Content(),
+            Content(),
             Minimal(),
             Multiple1(mimetypes = {"*/*": "text"}),
             Multiple2("multiple"),
