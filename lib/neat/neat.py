@@ -59,6 +59,7 @@ class Service(object):
         except NotImplementedError:
             raise HTTPNotfound("Not implemented")
 
+        logging.debug("Response: %s; method: %s", response, method)
         return response
 
     def match(self, req):
@@ -142,6 +143,12 @@ class Resource(object):
         except NotImplementedError:
             pass
 
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return str(self)
+
     def setup(self):
         """Set up the resource.
 
@@ -174,8 +181,8 @@ class Resource(object):
         path = req.path_info.strip('/')
         collection, _, resource = path.partition('/')
         if collection != self.collection:
-            logging.debug("Collection '%s' does not match request path: '%s'",
-                self.collection, path)
+            logging.debug("Resource '%s' does not match request path: '%s'",
+                self, req.path_info)
             return None
         elif resource:
             methodskey = "member"
@@ -183,14 +190,19 @@ class Resource(object):
         else:
             methodskey = "collection"
 
+        logging.debug("Resource '%s' matches request path: '%s'",
+            self, req.path_info)
+
         methods = self.methods.get(methodskey)
         method = methods.get(req.method, None)
 
         if method is None:
-            logging.debug("Request path '%s' did not match any base method", path)
+            logging.debug("Request path '%s' did not match any base method "
+                "on resource '%s'", req.path_info, self)
             return None
 
-        logging.debug("Request path '%s' matched base method '%s'", path, method)
+        logging.debug("Request path '%s' matched base method '%s' "
+            "on resource '%s'", req.path_info, method, self)
 
         accept = "*/*"
         if req.accept:
@@ -205,6 +217,8 @@ class Resource(object):
 
         suffix = self.mimetypes.get(mimetype, None)
         if suffix is None:
+            logging.debug("Request mimetype '%s' not supported by resource '%s'", 
+                mimetype, self)
             return None
         elif suffix:
             method = '_'.join((method, suffix))
@@ -212,12 +226,12 @@ class Resource(object):
         _method = getattr(self, method, None)
 
         if not callable(_method):
-            logging.debug("Request Accept header '%s' did not match any method",
-                acccept)
+            logging.debug("Request Accept header '%s' did not match any method "
+                "on resource '%s'", acccept, self)
             return None
 
-        logging.debug("Request Accept header '%s' matched method '%s'",
-            accept, method)
+        logging.debug("Request Accept header '%s' matched method '%s' "
+            "on resource '%s'", accept, method, self)
 
         return _method, args, kwargs
 
