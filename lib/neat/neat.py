@@ -134,6 +134,8 @@ class Resource(object):
     collection = ""
     """The collection modeled by this resource."""
 
+    best_match = staticmethod(best_match)
+
     def __init__(self, collection="", mimetypes={}):
         if collection:
             self.collection = collection
@@ -207,8 +209,8 @@ class Resource(object):
         accept = "*/*"
         if req.accept:
             accept = str(req.accept)
-        if best_match and self.mimetypes:
-            mimetype = best_match(self.mimetypes, accept)
+        if self.best_match and self.mimetypes:
+            mimetype = self.best_match(self.mimetypes, accept)
         else:
             full, _, params = accept.partition(';')
             full = full.strip()
