@@ -57,7 +57,7 @@ class Service(object):
         try:
             response = method(req, *args, **kwargs)
         except NotImplementedError:
-            raise HTTPNotfound("Not implemented")
+            raise HTTPNotFound("Not implemented")
 
         logging.debug("Response: %s; method: %s", response, method)
         return response
