@@ -121,12 +121,14 @@ class Resource(object):
     """
 
     mimetypes = {
+        "*/*": "",
     }
     """Dictionary of supported mimetypes.
 
     Values in this dictionary will be appended to base method names (see
     :attr:`methods`) when mapping requests to resource methods (see
-    :meth:`match`).
+    :meth:`match`). By default, all requests are routed directly to the base
+    methods (ie, no suffix is appended).
     """
 
     collection = ""
