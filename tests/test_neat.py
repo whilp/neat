@@ -2,7 +2,7 @@ from tests import AppTest
 
 from neat.neat import Resource, Service
 
-class TestResource(AppTest):
+class TestStack(AppTest):
 
     def setUp(self):
         class Empty(Resource):
