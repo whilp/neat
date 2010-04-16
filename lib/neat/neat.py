@@ -52,13 +52,14 @@ class Service(object):
         if match is None:
             raise HTTPNotFound("Not implemented")
         method, args, kwargs = match
+        name = "%s.%s" % (method.im_class.__name__, method.im_func.func_name)
 
-        # XXX: It'd be nice to log a unique name for the method.
         try:
             response = method(req, *args, **kwargs)
         except NotImplementedError:
             raise HTTPNotFound("Not implemented")
 
+        logging.debug("Dispatching request to %s(req, *%s, **%s)", name, args, kwargs)
         return response
 
     def match(self, req):
