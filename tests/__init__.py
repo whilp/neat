@@ -35,18 +35,13 @@ class AppTest(BaseTest):
 
         return req.get_response(self.application)
 
-class log(object):
-    level = logging.DEBUG
-
-    def __init__(self, func=None, level=None):
-        self.func = func
-
 class Decorator(object):
 
     def __new__(cls, func=None, **kwargs):
         obj = super(Decorator, cls).__new__(cls)
 
         if func is not None:
+            obj.__init__(**kwargs)
             obj = obj.wrap(func)
 
         return obj
