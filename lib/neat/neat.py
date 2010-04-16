@@ -59,7 +59,6 @@ class Service(object):
         except NotImplementedError:
             raise HTTPNotFound("Not implemented")
 
-        logging.debug("Response: %s; method: %s", response, method)
         return response
 
     def match(self, req):
@@ -227,7 +226,7 @@ class Resource(object):
 
         if not callable(_method):
             logging.debug("Request Accept header '%s' did not match any method "
-                "on resource '%s'", acccept, self)
+                "on resource '%s'", accept, self)
             return None
 
         logging.debug("Request Accept header '%s' matched method '%s' "
