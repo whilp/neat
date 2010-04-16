@@ -205,7 +205,7 @@ class Resource(object):
 
         accept = "*/*"
         if req.accept:
-            accept = req.accept
+            accept = str(req.accept)
         if best_match and self.mimetypes:
             mimetype = best_match(self.mimetypes, accept)
         else:
