@@ -11,9 +11,6 @@ class TestStack(AppTest):
         class Minimal(Resource):
             collection = "minimal"
 
-            def list(self):
-                pass
-
         class Multiple1(Resource):
             collection = "multiple"
             mimetypes = {"*/*": "text"}
@@ -47,3 +44,7 @@ class TestStack(AppTest):
     def test_multiple_matches(self):
         response = self.app("/multiple/foo")
         self.assertEqual(response.body, "multiple1: foo")
+
+    def test_method_not_implemented(self):
+        response = self.app("/minimal/foo")
+        self.assertEqual(response.status_int, 404)
