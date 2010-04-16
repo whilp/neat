@@ -137,8 +137,9 @@ class Resource(object):
     def __init__(self, collection="", mimetypes={}):
         if collection:
             self.collection = collection
-        if mimetypes:
-            self.mimetypes = mimetypes
+        m = {}
+        m.update(self.mimetypes, **mimetypes)
+        self.mimetypes = m
 
         try:
             self.setup()
