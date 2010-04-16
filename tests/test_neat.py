@@ -1,4 +1,4 @@
-from tests import AppTest
+from tests import AppTest, log
 
 from neat.neat import Resource, Service
 
@@ -13,13 +13,11 @@ class TestStack(AppTest):
 
         class Multiple1(Resource):
             collection = "multiple"
-            mimetypes = {"*/*": "text"}
 
             def retrieve_text(self, req, member):
                 return "multiple1: %s" % member
 
         class Multiple2(Resource):
-            collection = "multiple"
 
             def retrieve_text(self, req, member):
                 return "multiple2: %s" % member
@@ -27,11 +25,12 @@ class TestStack(AppTest):
         service = Service(
             Empty(),
             Minimal(),
-            Multiple1(),
-            Multiple2(),
+            Multiple1(mimetypes = {"*/*": "text"}),
+            Multiple2("multiple"),
         )
 
         self.application = service
+        self.empty = Empty()
 
     def test_no_resource(self):
         response = self.app("/doesnotexist")
@@ -48,3 +47,8 @@ class TestStack(AppTest):
     def test_method_not_implemented(self):
         response = self.app("/minimal/foo")
         self.assertEqual(response.status_int, 404)
+
+class TestResource(AppTest):
+
+    def test_resource_name(self):
+        self.assertEqual(str(Resource()), "Resource")
