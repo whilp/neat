@@ -6,12 +6,12 @@ from webob.exc import HTTPNotFound
 
 try:
     import json
-except ImportError:
+except ImportError: # pragma: nocover
     import simplejson as json
 
 try:
     from mimeparse import best_match
-except ImportError:
+except ImportError: # pragma: nocover
     best_match = False
 
 __all__ = ["Resource", "Service"]
