@@ -11,8 +11,18 @@ __author_email__ = "willmaier@ml1.net"
 __url__ = "http://code.lfod.us/neat"
 
 # See http://pypi.python.org/pypi?%3Aaction=list_classifiers.
-__classifiers__ = [] 
-__keywords__ = ""
+__classifiers__ = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 2.6",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+] 
+__keywords__ = "neat api rest microframework wsgi"
 
 __requires__ = [
     "WebOb",
