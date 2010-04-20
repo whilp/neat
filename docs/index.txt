@@ -40,10 +40,39 @@ A quick tour of :mod:`neat`'s features
 
 .. highlight:: python
 
-Here's a feature::
+Hello world::
+    
+    >>> from neat import Resource, Service
+    >>> from webob import Request
 
-    >>> import project
-    >>> project.feature()
+    >>> class Hello(Resource):
+    ...     collection = "hello"
+    ...
+    ...     def retrieve(self, req, name):
+    ...         return "Hello, %s" % name
+
+    >>> service = Service(Hello())
+    >>> req = Request.blank("/hello/you")
+    >>> req.get_response(service).body
+    'Hello, you'
+
+Easily add support for new media types::
+
+    >>> import json
+    >>> class JsonHello(Hello):
+    ...
+    ...     mimetypes = {"application/javascript": "json"}
+    ...
+    ...     def retrieve_json(self, req, name):
+    ...         req.response.content_type = "application/json"
+    ...         return json.dumps({"message": self.retrieve(req, name)})
+    ...
+
+    >>> service = Service(JsonHello("hello"))
+    >>> req = Request.blank("/hello/you")
+    >>> req.get_response(service).body
+    '{"message": "Hello, you"}'
+
 
 Basic usage
 -----------
