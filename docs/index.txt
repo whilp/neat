@@ -1,41 +1,41 @@
-:mod:`project` --- your slogan here
-===================================
+:mod:`neat` --- WSGI, neat
+==========================
 
-.. automodule:: project
+.. automodule:: neat
 
-Installing :mod:`project
-------------------------
+Installing :mod:`neat`
+----------------------
 
 .. highlight:: none
 
-You can install the latest stable version of :mod:`project` using :command:`pip`::
+You can install the latest stable version of :mod:`neat` using :command:`pip`::
     
-    $ pip install project
+    $ pip install neat
 
 Mirrors of the project's repository are hosted at `github.com`_ and `bitbucket.org`_
 -- feel free to clone and issue pull requests at either service. For `git`_
 users::
 
-    $ git clone http://github.com/wcmaier/project.git
+    $ git clone http://github.com/wcmaier/neat.git
 
-.. _github.com:     http://github.com/wcmaier/project.git
-.. _bitbucket.org:  http://bitbucket.org/lt_kije/project/
+.. _github.com:     http://github.com/wcmaier/neat.git
+.. _bitbucket.org:  http://bitbucket.org/lt_kije/neat/
 .. _git:            http://git-scm.com/
 
 And for `Mercurial`_ users::
 
-    $ hg clone http://bitbucket.org/lt_kije/project/
+    $ hg clone http://bitbucket.org/lt_kije/neat/
 
 .. _Mercurial:  http://mercurial.selenic.com/
 
 Both github and bitbucket provide feeds of changes to the project; for example::
 
-    http://github.com/wcmaier/project/commits/master.atom
+    http://github.com/wcmaier/neat/commits/master.atom
 
-If you'd like to contribute an improvement to :mod:`project`, please consider using
+If you'd like to contribute an improvement to :mod:`neat`, please consider using
 either of the above services. Otherwise, send an email to willmaier@ml1.net.
 
-A quick tour of :mod:`project`'s features
+A quick tour of :mod:`neat`'s features
 -------------------------------------------
 
 .. highlight:: python
@@ -55,12 +55,12 @@ API
 
 Here's the API.
 
-.. automodule:: project.subpackage
+.. automodule:: neat.neat
     :members:
     :show-inheritance:
 
-Developing :mod:`project`
----------------------------
+Developing :mod:`neat`
+----------------------
 
 Updating README
 +++++++++++++++
@@ -79,7 +79,7 @@ should happen at least once per release::
 Syncing with github and bitbucket
 +++++++++++++++++++++++++++++++++
 
-Even though all development of :mod:`project` occurs in a Mercurial
+Even though all development of :mod:`neat` occurs in a Mercurial
 repository, it's useful to provide a git mirror on Github, the very popular
 hosting service. This mirror (as well as the Mercurial mirror on bitbucket) is
 kept in sync using Mercurial `hooks`_ and `hg-git`_. First, a local mirror is
@@ -101,8 +101,8 @@ receives a new changegroup (ie, when we push from the master to the mirror)::
 
     $ cat <<EOF >| .mirror/.hg/hgrc
     [paths]
-    github = git+ssh://git@github.com/wcmaier/project.git
-    bitbucket = ssh://hg@bitbucket.org/lt_kije/project
+    github = git+ssh://git@github.com/wcmaier/neat.git
+    bitbucket = ssh://hg@bitbucket.org/lt_kije/neat
 
     [hooks]
     changegroup.updatemaster = hg bookmark -f -r default master
@@ -122,19 +122,15 @@ updated when the mirror repository receives a push.
 Running the tests
 +++++++++++++++++
 
-:mod:`project` ships with a number of unit tests that help ensure that the
+:mod:`neat` ships with a number of unit tests that help ensure that the
 code runs correctly. The tests live in the :mod:`tests` package and can be run
 by ``setup.py``::
     
     $ python setup.py test
 
-All new code in :mod:`project` should be accompanied by unit and/or functional
-tests. Note that many of the unit tests included here are ported from Google's
-ctemplate (and run against the :mod:`project.ctemplate` interface). Ideally,
-:mod:`project` should pass as many of ctemplate's tests as possible.
-
-You can get a sense for how completely the unit tests exercise :mod:`project`
-by running the coverage_ tool::
+All new code in :mod:`neat` should be accompanied by unit and/or functional
+tests. You can get a sense for how completely the unit tests exercise
+:mod:`neat` by running the coverage_ tool::
 
     $ coverage run --branch setup.py test
 
