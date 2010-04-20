@@ -1,5 +1,13 @@
 """\
-%PROJECT%
+
+neat is a `WSGI`_ micro framework that encourages API-centric development of web
+applications. The framework is especially compatible with `REST`-like services
+and APIs, though it can conceivably be used for more or less anything.
+Applications implemented with neat are easy to test and produce data that is
+easy for clients to consume.
+
+.. _WSGI:   http://wsgi.org/wsgi/
+.. _REST:   http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
 """
 
 __project__ = "neat"
