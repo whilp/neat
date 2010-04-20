@@ -1,5 +1,7 @@
 import logging
 
+from urllib import urlencode
+
 from webob import Response, Request
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
