@@ -277,17 +277,3 @@ class Resource(object):
     def replace(self, req, *args, **kwargs): # pragma: nocover
         """Replace a member."""
         raise NotImplementedError
-
-def serve():
-    from wsgiref.simple_server import make_server
-
-    service = Service()
-
-    server = make_server("127.0.0.1", 8080, service)
-    server.serve_forever()
-
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) >= 2 and sys.argv[1] == "serve":
-        serve()

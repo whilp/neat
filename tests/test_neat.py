@@ -48,12 +48,22 @@ class TestStack(AppTest):
             def retrieve_text(self, req, member):
                 return "multiple2: %s" % member
 
+        class NoMime(Resource):
+            collection = "nomime"
+            best_match = False
+
+            def list(self, req):
+                pass
+
+            retrieve = False
+
         service = Service(
             Empty(),
             Content(),
             Minimal(),
             Multiple1(mimetypes = {"*/*": "text"}),
             Multiple2("multiple"),
+            NoMime(),
         )
 
         self.application = service
@@ -75,7 +85,6 @@ class TestStack(AppTest):
         response = self.app("/minimal/foo")
         self.assertEqual(response.status_int, 404)
 
-    @log
     def test_crazy_http_method(self):
         response = self.app("/minimal", method="NOTAREALMETHOD")
         self.assertEqual(response.status_int, 404)
@@ -89,6 +98,18 @@ class TestStack(AppTest):
         response = self.app("/content", accept="application/javascript")
         self.assertEqual(response.content_type, "application/javascript")
         self.assertEqual(response.body, """[{"name": "a"}, {"name": "b"}]""")
+
+    def test_no_mime_at_all(self):
+        response = self.app("/nomime")
+        self.assertEqual(response.status_int, 200)
+
+    def test_no_mime_match(self):
+        response = self.app("/nomime", accept="something/youdontsupport")
+        self.assertEqual(response.status_int, 404)
+
+    def test_method_isnt_callable(self):
+        response = self.app("/nomime/foo")
+        self.assertEqual(response.status_int, 404)
 
 class TestResource(AppTest):
 
