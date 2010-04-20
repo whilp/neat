@@ -77,7 +77,27 @@ Easily add support for new media types::
 Basic usage
 -----------
 
-Here's how to use it.
+:mod:`neat` is a simple framework for modeling and representing resources
+via HTTP. This approach takes full advantage of the structure of the
+web, described by Roy Fielding in his famous `REST`_ paper. :mod:`neat`
+applications include a single :class:`~neat.neat.Service` that combines any
+number of resources (usually subclasses of :class:`~neat.neat.Resource`).
+When a :class:`~neat.neat.Service` receives a HTTP request, it routes the
+request to :class:`~neat.neat.Resource` methods using rules defined by the
+:class:`~neat.neat.Resource` itself. The :class:`~neat.neat.Resource` methods
+then interact with the data or state of the actual resource (for example, a
+database) and return a representation of the current state to the client.
+:class:`~neat.neat.Resource` can support a variety of representations (like
+JSON, HTML, CSV, XML), so the framework chooses the representation that best
+matches the HTTP request's Content header.
+
+.. _REST:   http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
+
+.. note::
+    The rules for routing requests and choosing representation formats are all
+    defined by the :class:`~neat.neat.Resource`, so different resources may define
+    different rules. If the default rules don't suit you, simply override
+    :meth:`~neat.neat.Resource.match`.
 
 API
 ---
