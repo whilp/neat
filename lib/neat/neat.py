@@ -258,23 +258,23 @@ class Resource(object):
         """List members of a collection."""
         raise NotImplementedError
 
-    def create(self, req, *args, **kwargs):
+    def create(self, req, *args, **kwargs): # pragma: nocover
         """Create a new member of a collection."""
         raise NotImplementedError
 
-    def retrieve(self, req, *args, **kwargs):
+    def retrieve(self, req, *args, **kwargs): # pragma: nocover
         """Fetch a member."""
         raise NotImplementedError
 
-    def edit(self, req, *args, **kwargs):
+    def edit(self, req, *args, **kwargs): # pragma: nocover
         """Edit or update a member."""
         raise NotImplementedError
 
-    def delete(self, req, *args, **kwargs):
+    def delete(self, req, *args, **kwargs): # pragma: nocover
         """Remove and delete a member."""
         raise NotImplementedError
 
-    def replace(self, req, *args, **kwargs):
+    def replace(self, req, *args, **kwargs): # pragma: nocover
         """Replace a member."""
         raise NotImplementedError
 
