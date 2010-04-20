@@ -1,4 +1,4 @@
-from tests import AppTest, log
+from tests import AppTest, BaseTest, log
 
 from neat.neat import Resource, Service
 
@@ -111,7 +111,7 @@ class TestStack(AppTest):
         response = self.app("/nomime/foo")
         self.assertEqual(response.status_int, 404)
 
-class TestResource(AppTest):
+class TestResource(BaseTest):
 
     def setUp(self):
         self.resource = Resource("foo")
