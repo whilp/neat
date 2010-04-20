@@ -113,5 +113,18 @@ class TestStack(AppTest):
 
 class TestResource(AppTest):
 
+    def setUp(self):
+        self.resource = Resource("foo")
+    
     def test_resource_name(self):
-        self.assertEqual(str(Resource()), "Resource")
+        self.assertEqual(str(self.resource), "Resource")
+
+    def test_url_collection(self):
+        self.assertEqual(self.resource.url(), "foo")
+
+    def test_url_member(self):
+        self.assertEqual(self.resource.url("bar"), "foo/bar")
+
+    def test_url_params(self):
+        self.assertEqual(self.resource.url(spam="eggs", swallow="laden"),
+            'foo?swallow=laden&spam=eggs')
