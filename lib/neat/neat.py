@@ -86,12 +86,13 @@ class Service(object):
         *args* and *kwargs* are passed to :class:`Resource.url`. Returns None if
         no :class:`Resource` matches.
         """
-        resource = None
+        match = None
         for resource in self.resources:
             if resource.collection == collection:
+                match = resource
                 break
 
-        if resource is None:
+        if match is None:
             return None
 
         return resource.url(*args, **kwargs)
