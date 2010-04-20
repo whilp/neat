@@ -7,7 +7,7 @@ try:
 except ImportError:
     import simplejson as json
 
-class TestStack(AppTest):
+class ServiceTest(AppTest):
 
     def setUp(self):
         class Empty(Resource):
@@ -66,8 +66,32 @@ class TestStack(AppTest):
             NoMime(),
         )
 
+        self.service = service
         self.application = service
         self.empty = Empty()
+
+class TestService(ServiceTest):
+    pass
+
+class TestResource(BaseTest):
+
+    def setUp(self):
+        self.resource = Resource("foo")
+    
+    def test_resource_name(self):
+        self.assertEqual(str(self.resource), "Resource")
+
+    def test_url_collection(self):
+        self.assertEqual(self.resource.url(), "foo")
+
+    def test_url_member(self):
+        self.assertEqual(self.resource.url("bar"), "foo/bar")
+
+    def test_url_params(self):
+        self.assertEqual(self.resource.url(spam="eggs", swallow="laden"),
+            'foo?swallow=laden&spam=eggs')
+
+class TestStack(ServiceTest):
 
     def test_no_resource(self):
         response = self.app("/doesnotexist")
@@ -110,21 +134,3 @@ class TestStack(AppTest):
     def test_method_isnt_callable(self):
         response = self.app("/nomime/foo")
         self.assertEqual(response.status_int, 404)
-
-class TestResource(BaseTest):
-
-    def setUp(self):
-        self.resource = Resource("foo")
-    
-    def test_resource_name(self):
-        self.assertEqual(str(self.resource), "Resource")
-
-    def test_url_collection(self):
-        self.assertEqual(self.resource.url(), "foo")
-
-    def test_url_member(self):
-        self.assertEqual(self.resource.url("bar"), "foo/bar")
-
-    def test_url_params(self):
-        self.assertEqual(self.resource.url(spam="eggs", swallow="laden"),
-            'foo?swallow=laden&spam=eggs')
