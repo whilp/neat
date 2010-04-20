@@ -71,7 +71,18 @@ class ServiceTest(AppTest):
         self.empty = Empty()
 
 class TestService(ServiceTest):
-    pass
+
+    def test_url_collection(self):
+        self.assertEqual(self.service.url("content"), "content")
+
+    def test_url_member(self):
+        self.assertEqual(self.service.url("content", "foo"), "content/foo")
+
+    def test_url_params(self):
+        self.assertEqual(self.service.url("content", "foo", spam="eggs"), "content/foo?spam=eggs")
+
+    def test_url_no_resource(self):
+        self.assertEqual(self.service.url("blargle"), None)
 
 class TestResource(BaseTest):
 
