@@ -57,6 +57,26 @@ class ServiceTest(AppTest):
 
             retrieve = False
 
+        class Extensions(Resource):
+            collection = "extensions"
+            extensions = {".json": "application/javascript"}
+            mimetypes = {
+                "application/javascript": "json",
+                "text/plain": "txt",
+            }
+
+            def list_json(self, req):
+                req.response.content_type = "application/javascript"
+                return json.dumps([{"name": str(x)} for x in range(5)])
+
+            def retrieve_json(self, req, name):
+                req.response.content_type = "application/javascript"
+                return json.dumps({"name": name})
+
+            def retrieve_txt(self, req, name):
+                req.response.content_type = "text/plain"
+                return "name: %s" % name
+
         service = Service(
             Empty(),
             Content(),
@@ -64,6 +84,7 @@ class ServiceTest(AppTest):
             Multiple1(mimetypes = {"*/*": "text"}),
             Multiple2("multiple"),
             NoMime(),
+            Extensions(),
         )
 
         self.service = service
@@ -145,3 +166,19 @@ class TestStack(ServiceTest):
     def test_method_isnt_callable(self):
         response = self.app("/nomime/foo")
         self.assertEqual(response.status_int, 404)
+
+    def test_map_extensions(self):
+        response = self.app("/extensions/foo.json")
+        self.assertEqual(response.content_type, "application/javascript")
+        self.assertEqual(response.body, '{"name": "foo"}')
+
+    def test_extension_overrides_accept(self):
+        response = self.app("/extensions/foo.json", accept="text/html")
+        self.assertEqual(response.content_type, "application/javascript")
+        self.assertEqual(response.body, '{"name": "foo"}')
+
+    def test_extesion_collection(self):
+        response = self.app("/extensions.json")
+        self.assertEqual(response.content_type, "application/javascript")
+        self.assertEqual(response.body,
+            '[{"name": "0"}, {"name": "1"}, {"name": "2"}, {"name": "3"}, {"name": "4"}]')

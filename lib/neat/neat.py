@@ -1,4 +1,5 @@
 import logging
+import os
 
 from urllib import urlencode
 
@@ -111,6 +112,14 @@ class Resource(object):
     in the :attr:`methods` dictionary.
     """
 
+    extensions = {}
+    """A dictionary mapping path extensions to mimetypes.
+
+    Keys here should match *ext* as returned by :func:`os.path.splitext` when
+    called on an incoming :attr:`Request.path_info`. Values should be mimetypes
+    that are also registered in the :attr:`mimetypes` dictionary.
+    """
+
     methods = {
         "member": dict(GET="retrieve", POST="replace", PUT="update", DELETE="delete"),
         "collection": dict(GET="list", POST="create"),
@@ -170,6 +179,12 @@ class Resource(object):
         arguments; *kwargs* is a dictionary of keyword arguments. *args* and
         *kwargs* can then be passed to *method* by the caller.
 
+        If :attr:`req.path_info` ends with an extension registered in
+        :attr:`extensions`, the extension will be removed from the path and the
+        matching mimetype will be used in place of the requests Accept header.
+        This allows clients to request different representations without having
+        to set the Accept header.
+
         A resource matches a request when: the first element in its path
         (:data:`req.path_info`) matches :attr:`collection; its HTTP method
         (:data:`req.method`) maps to a resource method in :attr:`methods`; and
@@ -183,7 +198,20 @@ class Resource(object):
         as they preserve the basic signature.
         """
         args = (); kwargs = {}
+
+        accept = "*/*"
+        if req.accept:
+            accept = str(req.accept)
         path = req.path_info.strip('/')
+
+        root, ext = os.path.splitext(path)
+        mimetype = self.extensions.get(ext, None)
+        if mimetype is not None:
+            logging.debug("Request path '%s' matches extension '%s'; "
+                "using mimetype '%s'", req.path_info, ext, mimetype)
+            accept = mimetype
+            path = root
+
         collection, _, resource = path.partition('/')
         if collection != self.collection:
             logging.debug("Resource '%s' does not match request path: '%s'",
@@ -209,9 +237,6 @@ class Resource(object):
         logging.debug("Request path '%s' matched base method '%s' "
             "on resource '%s'", req.path_info, method, self)
 
-        accept = "*/*"
-        if req.accept:
-            accept = str(req.accept)
         if self.best_match and self.mimetypes:
             mimetype = self.best_match(self.mimetypes, accept)
         else:
