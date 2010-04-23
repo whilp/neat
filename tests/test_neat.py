@@ -15,9 +15,15 @@ class ServiceTest(AppTest):
 
         class Minimal(Resource):
             collection = "minimal"
+            mimetypes = {
+                "text/plain": "text",
+            }
 
-            def list(self, req):
+            def list_text(self, req):
                 pass
+
+            def retrieve_text(self, req, name):
+                raise NotImplementedError
 
         class Content(Resource):
             collection = "content"
@@ -37,6 +43,10 @@ class ServiceTest(AppTest):
                 req.response.content_type = "application/javascript"
                 return json.dumps(self.list(req))
 
+            def create_text(self, req):
+                req.response.content_type = "text/plain"
+                req.response.body = req.body
+
         class Multiple1(Resource):
             collection = "multiple"
 
@@ -50,7 +60,7 @@ class ServiceTest(AppTest):
 
         class NoMime(Resource):
             collection = "nomime"
-            best_match = False
+            mimetypes = {"text/plain": "text"}
 
             def list(self, req):
                 pass
@@ -138,7 +148,7 @@ class TestStack(ServiceTest):
         self.assertEqual(response.body, "multiple1: foo")
 
     def test_method_not_implemented(self):
-        response = self.app("/minimal/foo")
+        response = self.app("/minimal/foo", accept="text/plain")
         self.assertEqual(response.status_int, 404)
 
     def test_crazy_http_method(self):
@@ -147,8 +157,8 @@ class TestStack(ServiceTest):
 
     def test_no_accept_header(self):
         response = self.app("/content")
-        self.assertEqual(response.content_type, "text/plain")
-        self.assertEqual(response.body, "name: a\nname: b")
+        self.assertEqual(response.content_type, "application/javascript")
+        self.assertEqual(response.body, """[{"name": "a"}, {"name": "b"}]""")
 
     def test_accept_header(self):
         response = self.app("/content", accept="application/javascript")
@@ -157,7 +167,7 @@ class TestStack(ServiceTest):
 
     def test_no_mime_at_all(self):
         response = self.app("/nomime")
-        self.assertEqual(response.status_int, 200)
+        self.assertEqual(response.status_int, 404)
 
     def test_no_mime_match(self):
         response = self.app("/nomime", accept="something/youdontsupport")
@@ -182,3 +192,9 @@ class TestStack(ServiceTest):
         self.assertEqual(response.content_type, "application/javascript")
         self.assertEqual(response.body,
             '[{"name": "0"}, {"name": "1"}, {"name": "2"}, {"name": "3"}, {"name": "4"}]')
+
+    def test_post_content_type(self):
+        response = self.app("/content", method="POST", body="foo",
+            content_type="text/plain")
+        self.assertEqual(response.content_type, "text/plain")
+        self.assertEqual(response.body, "foo")

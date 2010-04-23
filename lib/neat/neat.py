@@ -4,6 +4,7 @@ import os
 from urllib import urlencode
 
 from webob import Response, Request
+from webob.acceptparse import Accept
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
 
@@ -11,11 +12,6 @@ try:
     import json
 except ImportError: # pragma: nocover
     import simplejson as json
-
-try:
-    from mimeparse import best_match
-except ImportError: # pragma: nocover
-    best_match = False
 
 __all__ = ["Resource", "Service"]
 
@@ -133,20 +129,16 @@ class Resource(object):
     """
 
     mimetypes = {
-        "*/*": "",
     }
     """Dictionary of supported mimetypes.
 
     Values in this dictionary will be appended to base method names (see
     :attr:`methods`) when mapping requests to resource methods (see
-    :meth:`match`). By default, all requests are routed directly to the base
-    methods (ie, no suffix is appended).
+    :meth:`match`).
     """
 
     collection = ""
     """The collection modeled by this resource."""
-
-    best_match = staticmethod(best_match)
 
     def __init__(self, collection="", mimetypes={}):
         if collection:
@@ -199,23 +191,24 @@ class Resource(object):
         """
         args = (); kwargs = {}
 
-        accept = "*/*"
-        if req.accept:
-            accept = str(req.accept)
         path = req.path_info.strip('/')
-
         root, ext = os.path.splitext(path)
         mimetype = self.extensions.get(ext, None)
+
+        accept = req.accept
+        if req.method in ("PUT", "POST"):
+            accept = Accept("Content-Type", req.content_type)
         if mimetype is not None:
             logging.debug("Request path '%s' matches extension '%s'; "
                 "using mimetype '%s'", req.path_info, ext, mimetype)
-            accept = mimetype
+            accept = Accept("Accept", mimetype)
             path = root
 
         collection, _, resource = path.partition('/')
         if collection != self.collection:
             logging.debug("Resource '%s' does not match request path: '%s'",
                 self, req.path_info)
+            logging.debug("%s %s", collection, self.collection)
             return None
         elif resource:
             methodskey = "member"
@@ -237,13 +230,7 @@ class Resource(object):
         logging.debug("Request path '%s' matched base method '%s' "
             "on resource '%s'", req.path_info, method, self)
 
-        if self.best_match and self.mimetypes:
-            mimetype = self.best_match(self.mimetypes, accept)
-        else:
-            full, _, params = accept.partition(';')
-            full = full.strip()
-            if full == '*': full = "*/*"
-            mimetype = full
+        mimetype = accept.best_match(self.mimetypes)
 
         suffix = self.mimetypes.get(mimetype, None)
         if suffix is None:
@@ -282,7 +269,7 @@ class Resource(object):
 
         return url
 
-    def list(self, req, *args, **kwargs):
+    def list(self, req, *args, **kwargs): # pragma: nocover
         """List members of a collection."""
         raise NotImplementedError
 
