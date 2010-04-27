@@ -13,20 +13,20 @@ try:
 except ImportError: # pragma: nocover
     import simplejson as json
 
-__all__ = ["Resource", "Service"]
+__all__ = ["Resource", "Dispatch"]
 
 class NoMatch(Exception):
 	pass
 
-class Service(object):
+class Dispatch(object):
     """A WSGI service.
 
-    Services route HTTP requests to resources (usually subclasses of
-    :class:`Resource`) registered with the service. :class:`Service` is a WSGI
+    Dispatchs route HTTP requests to resources (usually subclasses of
+    :class:`Resource`) registered with the service. :class:`Dispatch` is a WSGI
     application (see :meth:`__call__`); the registered resources should provide
     methods that also return WSGI applications.
 
-    When instantiating a :class:`Service`, the resource objects may be passed as
+    When instantiating a :class:`Dispatch`, the resource objects may be passed as
     arguments to the constructor.
     """
 
@@ -88,7 +88,7 @@ class Service(object):
         """Generate a URL for *collection*.
 
         *collection* is a string matching a :attr:`~Resource.collection`
-        attribute of a :class:`Resource` registered with the :class:`Service`.
+        attribute of a :class:`Resource` registered with the :class:`Dispatch`.
         *args* and *kwargs* are passed to :class:`Resource.url`. Returns None if
         no :class:`Resource` matches.
         """
@@ -110,7 +110,7 @@ class Resource(object):
     on the server and supports client interactions similar
     to those defined in the `Atom Publishing Protocol
     <http://bitworking.org/projects/atom/rfc5023.html#operation>`_.
-    :class:`Resource` instances can be registered with a :class:`Service` to
+    :class:`Resource` instances can be registered with a :class:`Dispatch` to
     provide access to the resource model over WSGI (and therefore HTTP).
 
     A :class:`Resource` instance's methods should correspond to those registered

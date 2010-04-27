@@ -42,7 +42,7 @@ A quick tour of :mod:`neat`'s features
 
 Hello world::
     
-    >>> from neat import Resource, Service
+    >>> from neat import Resource, Dispatch
     >>> from webob import Request
 
     >>> class Hello(Resource):
@@ -51,7 +51,7 @@ Hello world::
     ...     def retrieve(self, req, name):
     ...         return "Hello, %s" % name
 
-    >>> service = Service(Hello())
+    >>> service = Dispatch(Hello())
     >>> req = Request.blank("/hello/you")
     >>> req.get_response(service).body
     'Hello, you'
@@ -68,7 +68,7 @@ Easily add support for new media types::
     ...         return json.dumps({"message": self.retrieve(req, name)})
     ...
 
-    >>> service = Service(JsonHello("hello"))
+    >>> service = Dispatch(JsonHello("hello"))
     >>> req = Request.blank("/hello/you")
     >>> req.get_response(service).body
     '{"message": "Hello, you"}'
@@ -80,9 +80,9 @@ Basic usage
 :mod:`neat` is a simple framework for modeling and representing resources
 via HTTP. This approach takes full advantage of the structure of the
 web, described by Roy Fielding in his famous `REST`_ paper. :mod:`neat`
-applications include a single :class:`~neat.neat.Service` that combines any
+applications include a single :class:`~neat.neat.Dispatch` that combines any
 number of resources (usually subclasses of :class:`~neat.neat.Resource`).
-When a :class:`~neat.neat.Service` receives a HTTP request, it routes the
+When a :class:`~neat.neat.Dispatch` receives a HTTP request, it routes the
 request to :class:`~neat.neat.Resource` methods using rules defined by the
 :class:`~neat.neat.Resource` itself. The :class:`~neat.neat.Resource` methods
 then interact with the data or state of the actual resource (for example, a

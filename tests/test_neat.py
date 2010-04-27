@@ -1,13 +1,13 @@
 from tests import AppTest, BaseTest, log
 
-from neat.neat import Resource, Service
+from neat.neat import Resource, Dispatch
 
 try:
     import json
 except ImportError:
     import simplejson as json
 
-class ServiceTest(AppTest):
+class DispatchTest(AppTest):
 
     def setUp(self):
         class Empty(Resource):
@@ -84,7 +84,7 @@ class ServiceTest(AppTest):
                 req.response.content_type = "text/plain"
                 return "name: %s" % req.path_info_pop()
 
-        service = Service(
+        service = Dispatch(
             Empty(),
             Content(),
             Minimal(),
@@ -98,7 +98,7 @@ class ServiceTest(AppTest):
         self.application = service
         self.empty = Empty()
 
-class TestService(ServiceTest):
+class TestDispatch(DispatchTest):
 
     def test_url_collection(self):
         self.assertEqual(self.service.url("content"), "content")
@@ -130,7 +130,7 @@ class TestResource(BaseTest):
         self.assertEqual(self.resource.url(spam="eggs", swallow="laden"),
             'foo?swallow=laden&spam=eggs')
 
-class TestStack(ServiceTest):
+class TestStack(DispatchTest):
 
     def test_no_resource(self):
         response = self.app("/doesnotexist")
