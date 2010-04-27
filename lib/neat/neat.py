@@ -15,6 +15,9 @@ except ImportError: # pragma: nocover
 
 __all__ = ["Resource", "Service"]
 
+class NoMatch(Exception):
+	pass
+
 class Service(object):
     """A WSGI service.
 
@@ -47,33 +50,39 @@ class Service(object):
         standard WSGI arguments (*environ*, *start_response*). :meth:`__call__`
         looks up the correct resource using :meth:`match`.
         """
-        match = self.match(req)
+        req, match = self.match(req)
         if match is None:
             raise HTTPNotFound("Not implemented")
-        method, args, kwargs = match
-        name = "%s.%s" % (method.im_class.__name__, method.im_func.func_name)
+        name = "%s.%s" % (match.im_class.__name__, match.im_func.func_name)
 
+        logging.debug("Dispatching request to %s", name)
         try:
-            response = method(req, *args, **kwargs)
+            response = match(req)
         except NotImplementedError:
+            logging.debug("%s is not implemented", name)
             raise HTTPNotFound("Not implemented")
 
-        logging.debug("Dispatching request to %s(req, *%s, **%s)", name, args, kwargs)
         return response
 
     def match(self, req):
         """Match a request to a resource.
 
         Returns the output of the first :meth:`Resource.match` call that does
-        not return None. First match wins.
+        not raise :class:`NoMatch`. First match wins.
         """
         match = None
+        backup = req.copy()
+        logging.debug("Matching %s", str(req).replace('\n', '; '))
         for resource in self.resources:
-            match = resource.match(req)
-            if match is not None:
+            try:
+                match = resource.match(req)
+                logging.debug("Resource %s matched request", resource)
                 break
+            except NoMatch, e:
+                logging.debug("Resource %s did not match request: %s", resource, e)
+                req = backup
 
-        return match
+        return req, match
 
     def url(self, collection, *args, **kwargs):
         """Generate a URL for *collection*.
@@ -166,14 +175,11 @@ class Resource(object):
     def match(self, req):
         """Match the resource to a request.
 
-        Return (method, args, kwargs) if the request matches. *method* is the
-        matching method on this resource; *args* is a tuple of positional
-        arguments; *kwargs* is a dictionary of keyword arguments. *args* and
-        *kwargs* can then be passed to *method* by the caller.
+        Returns a method of this resource instance if the request matches.
 
         If :attr:`req.path_info` ends with an extension registered in
         :attr:`extensions`, the extension will be removed from the path and the
-        matching mimetype will be used in place of the requests Accept header.
+        matching mimetype will be used in place of the request's Accept header.
         This allows clients to request different representations without having
         to set the Accept header.
 
@@ -181,76 +187,52 @@ class Resource(object):
         (:data:`req.path_info`) matches :attr:`collection; its HTTP method
         (:data:`req.method`) maps to a resource method in :attr:`methods`; and
         its Accept header (:data:`req.accept` or "*/*") matches a mimetype in
-        :attr:`mimetypes`. If the request is for a member of the collection, the
-        member portion of the path will be included in *args*. If any of the
-        above criteria are not satisfied, :meth:`match` returns None.
+        :attr:`mimetypes`. If any of the above criteria are not satisfied,
+        :meth:`match` raises :class:`NoMatch`.
 
         Since resource matching is controlled by the resource (and not the
         service), different resources can implement different strategies as long
         as they preserve the basic signature.
         """
-        args = (); kwargs = {}
-
-        path = req.path_info.strip('/')
-        root, ext = os.path.splitext(path)
+        root, ext = os.path.splitext(req.path_info)
         mimetype = self.extensions.get(ext, None)
+        if mimetype is not None:
+            req.path_info = root
+
+        collection = req.path_info_peek()
+
+        if collection == self.collection:
+            methodskey = "collection"
+            req.path_info_pop()
+        else:
+            raise NoMatch("Collection does not match")
+
+        if req.path_info_peek():
+            methodskey = "member"
+
 
         accept = req.accept
         if req.method in ("PUT", "POST"):
             accept = Accept("Content-Type", req.content_type)
         if mimetype is not None:
-            logging.debug("Request path '%s' matches extension '%s'; "
-                "using mimetype '%s'", req.path_info, ext, mimetype)
             accept = Accept("Accept", mimetype)
-            path = root
 
-        collection, _, resource = path.partition('/')
-        if collection != self.collection:
-            logging.debug("Resource '%s' does not match request path: '%s'",
-                self, req.path_info)
-            logging.debug("%s %s", collection, self.collection)
-            return None
-        elif resource:
-            methodskey = "member"
-            args = (resource,)
-        else:
-            methodskey = "collection"
+        methodname = self.methods[methodskey].get(req.method, None)
 
-        logging.debug("Resource '%s' matches request path: '%s'",
-            self, req.path_info)
-
-        methods = self.methods.get(methodskey)
-        method = methods.get(req.method, None)
-
-        if method is None:
-            logging.debug("Request path '%s' did not match any base method "
-                "on resource '%s'", req.path_info, self)
-            return None
-
-        logging.debug("Request path '%s' matched base method '%s' "
-            "on resource '%s'", req.path_info, method, self)
+        if methodname is None:
+            raise NoMatch("HTTP method does not match")
 
         mimetype = accept.best_match(self.mimetypes)
-
         suffix = self.mimetypes.get(mimetype, None)
-        if suffix is None:
-            logging.debug("Request mimetype '%s' not supported by resource '%s'", 
-                mimetype, self)
-            return None
-        elif suffix:
-            method = '_'.join((method, suffix))
+        if suffix:
+            methodname = '_'.join((methodname, suffix))
 
-        _method = getattr(self, method, None)
+        method = getattr(self, methodname, None)
 
-        if not callable(_method):
-            logging.debug("Request Accept header '%s' did not match any method "
-                "on resource '%s'", accept, self)
-            return None
+        if not callable(method):
+            raise NoMatch("Accept header does not match a method")
 
-        logging.debug("Request Accept header '%s' matched method '%s' "
-            "on resource '%s'", accept, method, self)
-
-        return _method, args, kwargs
+        return method
 
     def url(self, member=None, **kwargs):
         """Generate a URL for the resource.

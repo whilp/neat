@@ -22,7 +22,7 @@ class ServiceTest(AppTest):
             def list_text(self, req):
                 pass
 
-            def retrieve_text(self, req, name):
+            def retrieve_text(self, req):
                 raise NotImplementedError
 
         class Content(Resource):
@@ -50,20 +50,17 @@ class ServiceTest(AppTest):
         class Multiple1(Resource):
             collection = "multiple"
 
-            def retrieve_text(self, req, member):
-                return "multiple1: %s" % member
+            def retrieve_text(self, req):
+                return "multiple1: %s" % req.path_info_pop()
 
         class Multiple2(Resource):
 
-            def retrieve_text(self, req, member):
-                return "multiple2: %s" % member
+            def retrieve_text(self, req):
+                return "multiple2: %s" % req.path_info_pop()
 
         class NoMime(Resource):
             collection = "nomime"
             mimetypes = {"text/plain": "text"}
-
-            def list(self, req):
-                pass
 
             retrieve = False
 
@@ -79,13 +76,13 @@ class ServiceTest(AppTest):
                 req.response.content_type = "application/javascript"
                 return json.dumps([{"name": str(x)} for x in range(5)])
 
-            def retrieve_json(self, req, name):
+            def retrieve_json(self, req):
                 req.response.content_type = "application/javascript"
-                return json.dumps({"name": name})
+                return json.dumps({"name": req.path_info_pop()})
 
-            def retrieve_txt(self, req, name):
+            def retrieve_txt(self, req):
                 req.response.content_type = "text/plain"
-                return "name: %s" % name
+                return "name: %s" % req.path_info_pop()
 
         service = Service(
             Empty(),
