@@ -48,12 +48,12 @@ Hello world::
     >>> class Hello(Resource):
     ...     collection = "hello"
     ...
-    ...     def retrieve(self, req, name):
-    ...         return "Hello, %s" % name
+    ...     def retrieve(self, req):
+    ...         return "Hello, %s" % req.path_info_pop()
 
-    >>> service = Dispatch(Hello())
+    >>> dispatch = Dispatch(Hello())
     >>> req = Request.blank("/hello/you")
-    >>> req.get_response(service).body
+    >>> req.get_response(dispatch).body
     'Hello, you'
 
 Easily add support for new media types::
@@ -63,14 +63,14 @@ Easily add support for new media types::
     ...
     ...     mimetypes = {"application/javascript": "json"}
     ...
-    ...     def retrieve_json(self, req, name):
+    ...     def retrieve_json(self, req):
     ...         req.response.content_type = "application/json"
-    ...         return json.dumps({"message": self.retrieve(req, name)})
+    ...         return json.dumps({"message": self.retrieve(req)})
     ...
 
-    >>> service = Dispatch(JsonHello("hello"))
+    >>> dispatch = Dispatch(JsonHello("hello"))
     >>> req = Request.blank("/hello/you")
-    >>> req.get_response(service).body
+    >>> req.get_response(dispatch).body
     '{"message": "Hello, you"}'
 
 
