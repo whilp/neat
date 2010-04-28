@@ -58,13 +58,14 @@ class Dispatch(object):
         req, match = self.match(req)
         if match is None:
             raise HTTPNotFound("Not implemented")
-        name = "%s.%s" % (match.im_class.__name__, match.im_func.func_name)
 
-        self.log.debug("Dispatching request to %s", name)
+        name = match.im_func.func_name
+        self.log.debug("Dispatching request to method %s", name)
+            
         try:
             response = match(req)
         except NotImplementedError:
-            self.log.debug("%s is not implemented", name)
+            self.log.debug("Method %s is not implemented", name)
             raise HTTPNotFound("Not implemented")
 
         return response
@@ -77,7 +78,7 @@ class Dispatch(object):
         """
         match = None
         backup = req.copy()
-        self.log.debug("Matching %s", str(req).replace('\n', '; '))
+        self.log.debug("Matching %s", str(req).strip().replace('\n', '; '))
         for resource in self.resources:
             try:
                 match = resource.match(req)
