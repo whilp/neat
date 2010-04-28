@@ -5,8 +5,9 @@ from urllib import urlencode
 
 from webob import Response, Request
 from webob.acceptparse import Accept
-from webob.dec import wsgify
 from webob.exc import HTTPNotFound
+
+from .util import wsgify
 
 try:
     import json

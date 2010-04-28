@@ -56,3 +56,4 @@ __todo__ = """\
 """
 
 from .neat import *
+from .util import *
