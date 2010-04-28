@@ -15,8 +15,12 @@ except ImportError: # pragma: nocover
 
 __all__ = ["Resource", "Dispatch"]
 
+def logger(cls):
+    name = "%s.%s" % (__name__, cls.__class__.__name__)
+    return logging.getLogger(name)
+
 class NoMatch(Exception):
-	pass
+    pass
 
 class Dispatch(object):
     """A WSGI service.
@@ -38,7 +42,8 @@ class Dispatch(object):
     """
 
     def __init__(self, *resources):
-        logging.debug("Registered %d resources", len(resources))
+        self.log = logger(self)
+        self.log.debug("Registered %d resources", len(resources))
         self.resources = list(resources)
     
     @wsgify
@@ -55,11 +60,11 @@ class Dispatch(object):
             raise HTTPNotFound("Not implemented")
         name = "%s.%s" % (match.im_class.__name__, match.im_func.func_name)
 
-        logging.debug("Dispatching request to %s", name)
+        self.log.debug("Dispatching request to %s", name)
         try:
             response = match(req)
         except NotImplementedError:
-            logging.debug("%s is not implemented", name)
+            self.log.debug("%s is not implemented", name)
             raise HTTPNotFound("Not implemented")
 
         return response
@@ -72,14 +77,14 @@ class Dispatch(object):
         """
         match = None
         backup = req.copy()
-        logging.debug("Matching %s", str(req).replace('\n', '; '))
+        self.log.debug("Matching %s", str(req).replace('\n', '; '))
         for resource in self.resources:
             try:
                 match = resource.match(req)
-                logging.debug("Resource %s matched request", resource)
+                self.log.debug("Resource %s matched request", resource)
                 break
             except NoMatch, e:
-                logging.debug("Resource %s did not match request: %s", resource, e)
+                self.log.debug("Resource %s did not match request: %s", resource, e)
                 req = backup
 
         return req, match
@@ -150,6 +155,7 @@ class Resource(object):
     """The collection modeled by this resource."""
 
     def __init__(self, collection="", mimetypes={}):
+        self.log = logger(self)
         if collection:
             self.collection = collection
         m = {}
