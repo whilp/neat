@@ -217,7 +217,6 @@ class Resource(object):
         if req.path_info_peek():
             methodskey = "member"
 
-
         accept = req.accept
         if req.method in ("PUT", "POST"):
             accept = Accept("Content-Type", req.content_type)
