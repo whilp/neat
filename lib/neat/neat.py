@@ -22,10 +22,39 @@ def logger(cls):
 
 class Resource(object):
     prefix = ""
+    methods = {
+        "GET": "get",
+        "POST": "post",
+        "PUT": "put",
+        "DELETE": "delete",
+        "HEAD": "head",
+    }
+    media = {}
+    extensions = {}
 
     @wsgify
     def __call__(self, req):
-        pass
+        try:
+            method = self.methods[req.method]
+        except KeyError:
+            raise webob.exc.HTTPMethodNotAllowed(
+                "HTTP method '%s' is not supported" % req.method,
+                headers={"Allow": ", ".join(self.methods.values())})
+
+        root, ext = os.path.splitext(req.path_info)
+        handler = self.extensions.get(ext, None)
+        if handler is None:
+            media = req.accept.best_match(media)
+            handler = self.media.get(media, None)
+
+        method = getattr(self, "%s_%s" % (method, handler), None)
+        if  not callable(method):
+            raise webob.exc.HTTPUnsupportedMediaType("No handler for response media type")
+
+        if not hasattr(req, "response"):
+            req.response = Response()
+        self.req = req
+        return method(req)
 
 class Dispatch(object):
     resources = []
