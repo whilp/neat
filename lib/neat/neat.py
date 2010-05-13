@@ -3,9 +3,9 @@ import os
 
 from urllib import urlencode
 
+import webob.exc
 from webob import Response, Request
 from webob.acceptparse import Accept
-from webob.exc import HTTPNotFound
 
 from .util import wsgify
 
