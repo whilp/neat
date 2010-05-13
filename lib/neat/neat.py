@@ -37,6 +37,11 @@ class Dispatch(object):
     def __call__(self, req):
         resource = self.match(req, self.resources)
 
+        if resource is None:
+            raise webob.exc.HTTPNotFound("No resource matches the request")
+
+        return resource(req)
+
     def match(self, req, resources):
         """Return the resource that matches *req*.
 
