@@ -21,7 +21,26 @@ def logger(cls):
     return logging.getLogger(name)
 
 class Resource(object):
+    prefix = ""
 
-	@wsgify
-	def __call__(self, req):
-		pass
+    @wsgify
+    def __call__(self, req):
+        pass
+
+class Dispatch(object):
+    resources = []
+
+    def __init__(self, *resources):
+        self.resources = list(resources)
+    
+    @wsgify
+    def __call__(self, req):
+        resource = self.match(req, self.resources)
+
+    def match(self, req, resources):
+        resource = None
+        for resource in resources:
+            if req.path_info.startswith(resource.prefix):
+                break
+
+        return resource
