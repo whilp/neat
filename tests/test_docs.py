@@ -1,4 +1,4 @@
 import doctest
 
-def additional_tests():
+def skip_additional_tests():
     return doctest.DocFileSuite("../docs/index.txt")
