@@ -38,6 +38,15 @@ class Dispatch(object):
         resource = self.match(req, self.resources)
 
     def match(self, req, resources):
+        """Return the resource that matches *req*.
+
+        *req* should be a :class:`webob.Request` instance; *resources* should be
+        an iterable of :class:`Resource` subclasses. Returns None if no resource
+        matches the request.
+
+        A resource matches a request when the request's PATH_INFO starts with
+        the resource's :attr:`prefix` string (first match wins).
+        """
         resource = None
         for resource in resources:
             if req.path_info.startswith(resource.prefix):
