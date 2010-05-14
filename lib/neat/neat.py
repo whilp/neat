@@ -22,6 +22,7 @@ def logger(cls):
 
 class Resource(object):
     prefix = ""
+    """The URI space for which this resource is responsible."""
     methods = {
         "GET": "get",
         "POST": "post",
@@ -29,8 +30,29 @@ class Resource(object):
         "DELETE": "delete",
         "HEAD": "head",
     }
+    """Maps HTTP methods to local method base names.
+
+    For example:
+
+        GET -> get
+        POST -> post
+    """
     media = {}
+    """Maps media types to local method suffixes.
+
+    For example:
+        
+        text/html -> html
+        application/vnd.my.resource+json -> json
+    """
     extensions = {}
+    """Maps URI file extensions to local method suffixes.
+
+    For example:
+        
+        .html -> html
+        .json -> json
+	"""
 
     @wsgify
     def __call__(self, req):
@@ -75,13 +97,28 @@ class Resource(object):
         return method(req)
 
 class Dispatch(object):
+    """A WSGI application that dispatches to other WSGI applications.
+
+    Incoming requests are passed to registered :class:`Resource` subclasses.
+    Resources can be registered by passing them as arguments on initialization
+    or by adding them to :attr:`resources` later.
+    """
     resources = []
+    """A list of :class:`Resource` subclasses."""
 
     def __init__(self, *resources):
         self.resources = list(resources)
     
     @wsgify
     def __call__(self, req):
+        """Dispatch the request to a registered resource.
+
+        *req* is a :class:`webob.Request` instance (created if necessary by the
+        :class:`webob.dec.wsgify` decorator). This method calls :meth:`match` to
+        find a matching resource; if none is found, it raises
+        :class:`webob.exc.HTTPNotFound`. It then instantiates the matching :class:`Resource`
+        subclass and calls it with the request.
+        """
         resource = self.match(req, self.resources)
 
         if resource is None:
