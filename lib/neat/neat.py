@@ -34,6 +34,24 @@ class Resource(object):
 
     @wsgify
     def __call__(self, req):
+        """Route a request to an appropriate method of the resource, returning a response.
+
+        *req* is a :class:`webob.Request` instance (either provided by the
+        caller or created by the :class:`webob.dec.wsgify` decorator). This
+        method will first check the request's HTTP method, mapping it to a local
+        method name using :attr:`methods`. If the request's PATH_INFO ends with
+        an extension registered in :attr:`extensions`, the extension's handler
+        will be used; otherwise, this method will try to match the request's
+        Accept header against handlers registered in :attr:`media`. If no
+        handler can be found, this method raises an exception from
+        :module:`webob.exc`.
+
+        For example, a request made with the GET method and an Accept header (or
+        PATH_INFO file extension) that matches the "html" handler will be
+        dispatched to a method on the :class:`Resource` named "get_html". These
+        methods take no arguments; the :class:`webob.Request` instance is
+        available in the :attr:`request` attribute.
+        """
         try:
             method = self.methods[req.method]
         except KeyError:
