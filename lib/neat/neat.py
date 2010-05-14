@@ -96,12 +96,22 @@ class Dispatch(object):
         an iterable of :class:`Resource` subclasses. Returns None if no resource
         matches the request.
 
-        A resource matches a request when the request's PATH_INFO starts with
-        the resource's :attr:`prefix` string (first match wins).
+        A request matches if:
+         
+         * PATH_INFO ends in '/' and starts with the resource's
+         :attr:`Resource.prefix` attribute; or
+         * PATH_INFO is the same as the resource's :attr:`Resource.prefix`
+         attribute.
+
+        The first match wins.
         """
         resource = None
         for resource in resources:
-            if req.path_info.startswith(resource.prefix):
+            if resource.prefix.endswith('/'):
+                matches = req.path_info.startswith(resource.prefix)
+            else:
+                matches = req.path_info == resource.prefix
+            if matches:
                 break
 
         return resource

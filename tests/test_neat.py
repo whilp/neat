@@ -30,3 +30,13 @@ class TestDispatch(BaseTest):
         resources = sorted(self.dispatch.resources, reverse=True)
         resource = self.dispatch.match(self.req, resources)
         self.assertEqual(resource, Test)
+
+    def test_match_prefix(self):
+        req = Request.blank("/testing")
+        resource = self.dispatch.match(req, self.dispatch.resources)
+        self.assertEqual(resource, Testing)
+
+    def test_match_collection(self):
+        req = Request.blank("/test/1")
+        resource = self.dispatch.match(req, self.dispatch.resources)
+        self.assertEqual(resource, Tests)
