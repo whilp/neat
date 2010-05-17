@@ -1,6 +1,6 @@
 from webob.dec import wsgify
 
-__all__ = ["wsgify"]
+__all__ = ["validate", "wsgify"]
 
 class Error(Exception):
 
