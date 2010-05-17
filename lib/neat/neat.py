@@ -98,7 +98,8 @@ class Resource(object):
         if not hasattr(req, "response"):
             req.response = Response()
         self.req = req
-        return method(req)
+        self.response = req.response
+        return method()
 
 class Dispatch(object):
     """A WSGI application that dispatches to other WSGI applications.
