@@ -90,4 +90,4 @@ class validate(Decorator):
             except TypeError, e:
                 raise ValidatorError("failed to validate key", k, v, e)
 
-        return func(*arsgs, **kwargs)
+        return func(*args, **kwargs)
