@@ -82,12 +82,12 @@ class validate(Decorator):
             try:
                 value = kwargs[key]
             except KeyError:
-                raise ValidatorError("missing key", k)
+                raise ValidatorError("missing key", key)
             if not callable(validator):
                 validator = getattr(self, validator)
             try:
-                _kwargs[k] = validator(v)
+                _kwargs[key] = validator(value)
             except TypeError, e:
-                raise ValidatorError("failed to validate key", k, v, e)
+                raise ValidatorError("failed to validate key", key, value, e)
 
-        return func(*args, **kwargs)
+        return func(*args, **_kwargs)
