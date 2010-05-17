@@ -2,6 +2,23 @@ from webob.dec import wsgify
 
 __all__ = ["validate", "wsgify"]
 
+try:
+    from functools import wraps
+except ImportError:
+    def update_wrapper(wrapper, wrapped):
+        for attr in "module name doc".split():
+            attr = "__%s__" % attr
+            setattr(wrapper, attr, getattr(wrapped, attr))
+        for attr in "dict".split():
+            attr = "__%s__" % attr
+            getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
+
+        return wrapper
+
+    def wraps(wrapped):
+        return partial(update_wrapper, wrapped=wrapped)
+
+
 class Error(Exception):
 
     def __str__(self):
