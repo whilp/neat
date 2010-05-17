@@ -18,18 +18,6 @@ except ImportError:
     def wraps(wrapped):
         return partial(update_wrapper, wrapped=wrapped)
 
-
-class Error(Exception):
-
-    def __str__(self):
-        if self.args:
-            return str(self.args[0])
-        else:
-            return super(Error, self).__str__()
-
-class ValidatorError(Error):
-    pass
-
 class wsgify(wsgify):
 
     def __call__(self, req, *args, **kwargs):
@@ -82,12 +70,10 @@ class validate(Decorator):
             try:
                 value = kwargs[key]
             except KeyError:
-                raise ValidatorError("missing key", key)
+                # Let the wrapped method raise TypeError if the key isn't present.
+                continue
             if not callable(validator):
                 validator = getattr(self, validator)
-            try:
-                _kwargs[key] = validator(value)
-            except TypeError, e:
-                raise ValidatorError("failed to validate key", key, value, e)
+            _kwargs[key] = validator(value)
 
         return func(*args, **_kwargs)
