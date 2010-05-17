@@ -66,14 +66,36 @@ class validate(Decorator):
 
     def call(self, func, args, kwargs):
         _kwargs = {}
+        args = list(args)
+        varnames = self.getvarnames(func)
         for key, validator in self.schema.items():
+            index = None
             try:
                 value = kwargs[key]
             except KeyError:
-                # Let the wrapped method raise TypeError if the key isn't present.
-                continue
+                # Let the wrapped method raise TypeError if the key isn't in
+                # kwargs or args.
+                try:
+                    index = varnames.index(key)
+                    value = args[index]
+                except (IndexError, ValueError):
+                    continue
+
             if not callable(validator):
                 validator = getattr(self, validator)
-            _kwargs[key] = validator(value)
+            value = validator(value)
+
+            if index is not None:
+                args[index] = value
+            else:
+                _kwargs[key] = value
 
         return func(*args, **_kwargs)
+
+    def getvarnames(self, func):
+        try:
+            code = func.im_func.func_code
+        except AttributeError:
+            code = func.func_code
+
+        return code.co_varnames
