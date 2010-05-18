@@ -123,6 +123,7 @@ class Resource(object):
             req.response = Response()
         self.req = req
         self.response = req.response
+        self.response.content_type = ""
 
         media = self.media.get(content.best_match(self.media), None)
         handlername = "handle_%s" % media
@@ -135,6 +136,7 @@ class Resource(object):
         content = getattr(response, "content_type", self.response.content_type)
         if not content:
             self.response.content_type = responsetype
+        return response
 
 class Dispatch(object):
     """A WSGI application that dispatches to other WSGI applications.
