@@ -110,7 +110,7 @@ class Resource(object):
         responsetype = accept.best_match(self.media)
         media = self.media.get(responsetype, None)
         methodname = "%s_%s" % (httpmethod, media)
-        method = getattr(self, methodname, None)
+        method = getattr(self, methodname, getattr(self, httpmethod, None))
         if not callable(method):
             raise webob.exc.HTTPUnsupportedMediaType()
 
