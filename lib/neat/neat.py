@@ -46,13 +46,15 @@ class Resource(object):
         application/vnd.my.resource+json -> json
     """
     extensions = {}
-    """Maps URI file extensions to local method suffixes.
+    """Maps URI file extensions to media types.
 
     For example:
         
-        .html -> html
-        .json -> json
-	"""
+        .html -> text/html
+        .json -> application/vnd.my.resource+json
+
+    The media types should be present in :attr:`media`.
+    """
 
     @wsgify
     def __call__(self, req):
@@ -82,14 +84,10 @@ class Resource(object):
                 headers={"Allow": ", ".join(self.methods.values())})
 
         root, ext = os.path.splitext(req.path_info)
-        handler = self.extensions.get(ext, None)
-        if handler is None:
-            if req.method in ("POST", "PUT"):
-                accept = Accept("Content-Type", req.content_type)
-            else:
-                accept = req.accept
-            media = accept.best_match(self.media)
-            handler = self.media.get(media, None)
+        media = self.extensions.get(ext, None)
+        if media is None:
+            media = req.accept.best_match(self.media)
+        handler = self.media.get(media, None)
 
         method = getattr(self, "%s_%s" % (method, handler), None)
         if  not callable(method):
