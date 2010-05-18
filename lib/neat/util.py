@@ -67,10 +67,15 @@ class validate(Decorator):
         self.schema = schema
 
     def call(self, func, args, kwargs):
+        varnames = self.getvarnames(func)
+        args, kwargs = self.validate(self.schema, varnames, args, kwargs)
+
+        return func(*args, **kwargs)
+
+    def validate(self, schema, varnames, args, kwargs):
         _kwargs = {}
         args = list(args)
-        varnames = self.getvarnames(func)
-        for key, validator in self.schema.items():
+        for key, validator in schema.items():
             index = None
             try:
                 value = kwargs[key]
@@ -98,7 +103,7 @@ class validate(Decorator):
             else:
                 _kwargs[key] = value
 
-        return func(*args, **_kwargs)
+        return args, _kwargs
 
     def getvarnames(self, func):
         try:
