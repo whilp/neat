@@ -88,6 +88,7 @@ class Resource(object):
         methods take no arguments; the :class:`webob.Request` instance is
         available in the :attr:`request` attribute.
         """
+        log = logger(self)
         try:
             httpmethod = self.methods[req.method]
         except KeyError:
@@ -112,6 +113,11 @@ class Resource(object):
         method = getattr(self, methodname, None)
         if not callable(method):
             raise webob.exc.HTTPUnsupportedMediaType()
+
+        log.debug("Request HTTP method: %s", httpmethod)
+        log.debug("Request Accept header: %s", accept)
+        log.debug("Request Content-Type header: %s", content)
+        log.debug("Handling request with method %s", methodname)
             
         if not hasattr(req, "response"):
             req.response = Response()
@@ -122,6 +128,7 @@ class Resource(object):
         handlername = "handle_%s" % media
         handler = getattr(self, handlername, None)
         if not hasattr(req, "content") and callable(handler):
+            log.debug("Handling request content with method %s", handlername)
             req.content = handler()
 
         response = method()
