@@ -98,14 +98,18 @@ class Resource(object):
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         if media is None:
-            accept = req.accept
             content = Accept("Content-Type", req.content_type)
+            accept = req.accept
+            if not accept:
+                accept = Accept("Accept", req.content_type)
         else:
             accept = Accept("Accept", media)
             content = Accept("Content-Type", media)
 
-        method = self.media.get(accept.best_match(self.media), None)
-        method = getattr(self, "%s_%s" % (httpmethod, method), None)
+        responsetype = accept.best_match(self.media)
+        media = self.media.get(responsetype, None)
+        methodname = "%s_%s" % (httpmethod, media)
+        method = getattr(self, methodname, None)
         if not callable(method):
             raise webob.exc.HTTPUnsupportedMediaType()
             
@@ -114,12 +118,16 @@ class Resource(object):
         self.req = req
         self.response = req.response
 
-        handler = self.media.get(content.best_match(self.media), None)
-        handler = getattr(self, "handle_%s" % handler, None)
+        media = self.media.get(content.best_match(self.media), None)
+        handlername = "handle_%s" % media
+        handler = getattr(self, handlername, None)
         if not hasattr(req, "content") and callable(handler):
             req.content = handler()
 
-        return method()
+        response = method()
+        content = getattr(response, "content_type", self.response.content_type)
+        if not content:
+            self.response.content_type = responsetype
 
 class Dispatch(object):
     """A WSGI application that dispatches to other WSGI applications.
