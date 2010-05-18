@@ -128,8 +128,9 @@ class Resource(object):
         media = self.media.get(content.best_match(self.media), None)
         handlername = "handle_%s" % media
         handler = getattr(self, handlername, None)
-        if not hasattr(req, "content") and callable(handler):
-            log.debug("Handling request content with method %s", handlername)
+        if not hasattr(req, "content"):
+            if not callable(handler):
+                handler = lambda : self.req.params
             req.content = handler()
 
         response = method()
