@@ -55,6 +55,16 @@ class Resource(object):
 
     The media types should be present in :attr:`media`.
     """
+    req = None
+    """A :class:`webob.Request` instance.
+
+    :meth:`__call__` sets this attribute before calling one of the
+    <method>_<media> methods. It also sets the following attributes of the
+    request object:
+
+     * *response*, a :class:`webob.Response` instance;
+     * *content*, an object produced by a handle_<media> method.
+    """
 
     @wsgify
     def __call__(self, req):
@@ -63,12 +73,14 @@ class Resource(object):
         *req* is a :class:`webob.Request` instance (either provided by the
         caller or created by the :class:`webob.dec.wsgify` decorator). This
         method will first check the request's HTTP method, mapping it to a local
-        method name using :attr:`methods`. If the request's PATH_INFO ends
-        with an extension registered in :attr:`extensions`, the extension's
-        handler will be used; otherwise, this method will try to match the
-        request's Accept header (or Content-Type for PUT or POST) against
-        handlers registered in :attr:`media`. If no handler can be found, this
-        method raises an exception from :module:`webob.exc`.
+        method name using :attr:`methods`. If the request's PATH_INFO ends with
+        an extension registered in :attr:`extensions`, the extension's media
+        type is used; otherwise, this method will try to match the request's
+        Accept header against methods registered in :attr:`media`. If no method
+        can be found, this method raises an exception from :module:`webob.exc`.
+
+        This method sets :attr:`req`, :attr:`req.response` and
+        :attr:`req.content` before calling the matched method.
 
         For example, a request made with the GET method and an Accept header (or
         PATH_INFO file extension) that matches the "html" handler will be
@@ -77,7 +89,7 @@ class Resource(object):
         available in the :attr:`request` attribute.
         """
         try:
-            method = self.methods[req.method]
+            httpmethod = self.methods[req.method]
         except KeyError:
             raise webob.exc.HTTPMethodNotAllowed(
                 "HTTP method '%s' is not supported" % req.method,
@@ -86,17 +98,27 @@ class Resource(object):
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         if media is None:
-            media = req.accept.best_match(self.media)
-        handler = self.media.get(media, None)
+            accept = req.accept
+            content = Accept("Content-Type", req.content_type)
+        else:
+            accept = Accept("Accept", media)
+            content = Accept("Content-Type", media)
 
-        method = getattr(self, "%s_%s" % (method, handler), None)
-        if  not callable(method):
-            raise webob.exc.HTTPUnsupportedMediaType("No handler for response media type")
-
+        method = self.media.get(accept.best_match(self.media), None)
+        method = getattr(self, "%s_%s" % (httpmethod, method), None)
+        if not callable(method):
+            raise webob.exc.HTTPUnsupportedMediaType()
+            
         if not hasattr(req, "response"):
             req.response = Response()
         self.req = req
         self.response = req.response
+
+        handler = self.media.get(content.best_match(self.media), None)
+        handler = getattr(self, "handle_%s" % handler, None)
+        if not hasattr(req, "content") and callable(handler):
+            req.content = handler()
+
         return method()
 
 class Dispatch(object):
