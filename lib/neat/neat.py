@@ -120,6 +120,7 @@ class Resource(object):
             log.warn("Raised exception %s" % repr(e))
             raise e
 
+        log.debug("Request PATH_INFO: %s", req.path_info)
         log.debug("Request HTTP method: %s", httpmethod)
         log.debug("Request Accept header: %s", accept)
         log.debug("Request Content-Type header: %s", content)
