@@ -3,7 +3,8 @@ import os
 
 from urllib import urlencode
 
-import webob.exc
+import webob.exc as errors
+
 from webob import Response, Request
 from webob.acceptparse import Accept
 
@@ -14,7 +15,7 @@ try:
 except ImportError: # pragma: nocover
     import simplejson as json
 
-__all__ = ["Resource", "Dispatch"]
+__all__ = ["Resource", "Response", "Request", "Dispatch", "errors"]
 
 def logger(cls):
     name = "%s.%s" % (__name__, cls.__class__.__name__)
@@ -77,7 +78,7 @@ class Resource(object):
         an extension registered in :attr:`extensions`, the extension's media
         type is used; otherwise, this method will try to match the request's
         Accept header against methods registered in :attr:`media`. If no method
-        can be found, this method raises an exception from :module:`webob.exc`.
+        can be found, this method raises an exception from :module:`errors`.
 
         This method sets :attr:`req`, :attr:`req.response` and
         :attr:`req.content` before calling the matched method.
@@ -92,7 +93,7 @@ class Resource(object):
         try:
             httpmethod = self.methods[req.method]
         except KeyError:
-            raise webob.exc.HTTPMethodNotAllowed(
+            raise errors.HTTPMethodNotAllowed(
                 "HTTP method '%s' is not supported" % req.method,
                 headers={"Allow": ", ".join(self.methods.values())})
 
@@ -112,7 +113,7 @@ class Resource(object):
         methodname = "%s_%s" % (httpmethod, media)
         method = getattr(self, methodname, getattr(self, httpmethod, None))
         if not callable(method):
-            raise webob.exc.HTTPUnsupportedMediaType()
+            raise errors.HTTPUnsupportedMediaType()
 
         log.debug("Request HTTP method: %s", httpmethod)
         log.debug("Request Accept header: %s", accept)
@@ -159,13 +160,13 @@ class Dispatch(object):
         *req* is a :class:`webob.Request` instance (created if necessary by the
         :class:`webob.dec.wsgify` decorator). This method calls :meth:`match` to
         find a matching resource; if none is found, it raises
-        :class:`webob.exc.HTTPNotFound`. It then instantiates the matching :class:`Resource`
+        :class:`errors.HTTPNotFound`. It then instantiates the matching :class:`Resource`
         subclass and calls it with the request.
         """
         resource = self.match(req, self.resources)
 
         if resource is None:
-            raise webob.exc.HTTPNotFound("No resource matches the request")
+            raise errors.HTTPNotFound("No resource matches the request")
 
         return resource(req)
 
