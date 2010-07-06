@@ -3,11 +3,10 @@ import os
 
 from urllib import urlencode
 
-import webob.exc as errors
-
 from webob import Response, Request
 from webob.acceptparse import Accept
 
+from . import errors
 from .util import wsgify
 
 try:
