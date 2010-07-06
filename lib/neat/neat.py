@@ -93,9 +93,11 @@ class Resource(object):
         try:
             httpmethod = self.methods[req.method]
         except KeyError:
-            raise errors.HTTPMethodNotAllowed(
+            e =  errors.HTTPMethodNotAllowed(
                 "HTTP method '%s' is not supported" % req.method,
                 headers={"Allow": ", ".join(self.methods.values())})
+            log.warn("Raised exception %s" % repr(e))
+            raise e
 
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
@@ -113,7 +115,11 @@ class Resource(object):
         methodname = "%s_%s" % (httpmethod, media)
         method = getattr(self, methodname, getattr(self, httpmethod, None))
         if not callable(method):
-            raise errors.HTTPUnsupportedMediaType()
+            e =  errors.HTTPUnsupportedMediaType(
+                "Media type %s is not supported for method %s" % (
+                    media, req.method))
+            log.warn("Raised exception %s" % repr(e))
+            raise e
 
         log.debug("Request HTTP method: %s", httpmethod)
         log.debug("Request Accept header: %s", accept)
@@ -166,7 +172,9 @@ class Dispatch(object):
         resource = self.match(req, self.resources)
 
         if resource is None:
-            raise errors.HTTPNotFound("No resource matches the request")
+            e = errors.HTTPNotFound("No resource matches the request")
+            log.warn("Raised exception %s" % repr(e))
+            raise e
 
         return resource(req)
 
