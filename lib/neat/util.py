@@ -58,8 +58,6 @@ class Decorator(object):
 
 class validate(Decorator):
     default = lambda x: x
-    validatorexc = (TypeError, ValueError)
-    exception = None
     
     def __init__(self, func=None, **schema):
         super(validate, self).__init__()
@@ -71,6 +69,18 @@ class validate(Decorator):
         args, kwargs = self.validate(self.schema, varnames, args, kwargs)
 
         return func(*args, **kwargs)
+
+    class validator(Decorator):
+        excs = (TypeError, ValueError)
+        exception = None
+
+        def call(self, func, args, kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception, e:
+                if self.exception is not None and isinstance(e, self.excs):
+                    raise self.exception(e.args[0])
+                raise
 
     def validate(self, schema, varnames, args, kwargs):
         _kwargs = {}
@@ -88,15 +98,7 @@ class validate(Decorator):
                 except (IndexError, ValueError):
                     continue
 
-            if not callable(validator):
-                validator = getattr(self, validator)
-
-            try:
-                value = validator(value)
-            except Exception, e:
-                if self.exception is not None and isinstance(e, self.validatorexc):
-                    raise self.exception(e.args[0])
-                raise
+            value = validator(value)
 
             if index is not None:
                 args[index] = value
