@@ -1,6 +1,12 @@
+import logging
+
 from webob.dec import wsgify
 
 __all__ = ["validate", "validator", "wsgify"]
+
+def logger(cls):
+    name = "%s.%s" % (__name__, cls.__class__.__name__)
+    return logging.getLogger(name)
 
 try:
     from functools import wraps
