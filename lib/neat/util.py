@@ -1,6 +1,6 @@
 from webob.dec import wsgify
 
-__all__ = ["validate", "wsgify"]
+__all__ = ["validate", "validator", "wsgify"]
 
 try:
     from functools import wraps
@@ -56,6 +56,21 @@ class Decorator(object):
     def call(self, func, args, kwargs):
         return func(*args, **kwargs)
 
+class validator(Decorator):
+
+    def call(self, func, args, kwargs):
+        instance = args[0]
+        exception = getattr(instance, "exception", None)
+        excs = getattr(instance, "excs", None)
+        if excs is None:
+            excs = (TypeError, ValueError)
+        try:
+            return func(*args, **kwargs)
+        except Exception, e:
+            if exception is not None and isinstance(e, excs):
+                raise exception(e.args[0])
+            raise
+
 class validate(Decorator):
     default = lambda x: x
     
@@ -69,18 +84,6 @@ class validate(Decorator):
         args, kwargs = self.validate(self.schema, varnames, args, kwargs)
 
         return func(*args, **kwargs)
-
-    class validator(Decorator):
-        excs = (TypeError, ValueError)
-        exception = None
-
-        def call(self, func, args, kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception, e:
-                if self.exception is not None and isinstance(e, self.excs):
-                    raise self.exception(e.args[0])
-                raise
 
     def validate(self, schema, varnames, args, kwargs):
         _kwargs = {}
