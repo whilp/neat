@@ -116,7 +116,6 @@ class Resource(object):
             e =  errors.HTTPUnsupportedMediaType(
                 "Media type %s is not supported for method %s" % (
                     media, req.method))
-            log.warn("Raised exception %s" % repr(e))
             raise e
 
         log.debug("Request PATH_INFO: %s", req.path_info)
@@ -173,7 +172,6 @@ class Dispatch(object):
 
         if resource is None:
             e = errors.HTTPNotFound("No resource matches the request")
-            log.warn("Raised exception %s" % repr(e))
             raise e
 
         return resource(req)
