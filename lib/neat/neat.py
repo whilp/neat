@@ -202,6 +202,4 @@ class Dispatch(object):
             else:
                 matches = req.path_info == resource.prefix
             if matches:
-                break
-
-        return resource
+                return resource
