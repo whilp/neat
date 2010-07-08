@@ -95,7 +95,6 @@ class Resource(object):
             e =  errors.HTTPMethodNotAllowed(
                 "HTTP method '%s' is not supported" % req.method,
                 headers={"Allow": ", ".join(self.methods.values())})
-            log.warn("Raised exception %s" % repr(e))
             raise e
 
         root, ext = os.path.splitext(req.path_info)
