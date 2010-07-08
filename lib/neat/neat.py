@@ -169,6 +169,7 @@ class Dispatch(object):
         :class:`errors.HTTPNotFound`. It then instantiates the matching :class:`Resource`
         subclass and calls it with the request.
         """
+        log = logger(self)
         resource = self.match(req, self.resources)
 
         if resource is None:
