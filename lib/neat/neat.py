@@ -139,7 +139,8 @@ class Resource(object):
             req.content = handler()
 
         response = method()
-        content = getattr(response, "content_type", self.response.content_type)
+        content = getattr(response, "content_type", 
+            getattr(self, "response.content_type", None))
         if not content:
             self.response.content_type = responsetype
         return response
