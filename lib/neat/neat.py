@@ -144,7 +144,7 @@ class Resource(object):
             raise
         except Exception, e:
             log.critical("Exception: %r", e)
-            raise errors.HTTPIntervalServerError()
+            raise errors.HTTPInternalServerError()
 
         content = getattr(response, "content_type", 
             getattr(self, "response.content_type", None))
