@@ -144,7 +144,7 @@ class Resource(object):
             raise
         except Exception, e:
             log.exception("Exception encountered while processing %s %s:", 
-                req.method, req.path_info, e)
+                req.method, req.path_info)
             raise errors.HTTPInternalServerError()
 
         content = getattr(response, "content_type", 
