@@ -138,7 +138,14 @@ class Resource(object):
                 handler = lambda : self.req.params
             req.content = handler()
 
-        response = method()
+        try:
+            response = method()
+        except errors.HTTPException:
+            raise
+        except Exception, e:
+            log.critical("Exception: %r", e)
+            raise errors.HTTPIntervalServerError()
+
         content = getattr(response, "content_type", 
             getattr(self, "response.content_type", None))
         if not content:
