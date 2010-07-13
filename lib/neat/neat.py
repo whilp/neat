@@ -143,7 +143,8 @@ class Resource(object):
         except errors.HTTPException:
             raise
         except Exception, e:
-            log.critical("Exception: %r", e)
+            log.exception("Exception encountered while processing %s %s: %r", 
+                httpmethod, req.path_info, e)
             raise errors.HTTPInternalServerError()
 
         content = getattr(response, "content_type", 
