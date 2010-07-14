@@ -97,7 +97,7 @@ class Resource(object):
                 headers={"Allow": ", ".join(self.methods.values())})
             raise e
 
-        root, ext = os.path.splitext(req.path_info)
+        _, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         if media is None:
             content = Accept("Content-Type", req.content_type)
