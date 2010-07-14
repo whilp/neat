@@ -97,6 +97,9 @@ class Resource(object):
                 headers={"Allow": ", ".join(self.methods.values())})
             raise e
 
+        # The first element of PATH_INFO is the same as our prefix.
+        req.path_info_pop()
+
         _, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         if media is None:
@@ -184,7 +187,6 @@ class Dispatch(object):
             e = errors.HTTPNotFound("No resource matches the request")
             raise e
 
-        req.path_info_pop()
         return resource(req)
 
     def match(self, req, resources):
