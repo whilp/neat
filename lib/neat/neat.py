@@ -118,6 +118,7 @@ class Resource(object):
                     media, req.method))
             raise e
 
+        log.debug("Request PATH: %s", req.path)
         log.debug("Request PATH_INFO: %s", req.path_info)
         log.debug("Request HTTP method: %s", httpmethod)
         log.debug("Request Accept header: %s", accept)
@@ -183,6 +184,7 @@ class Dispatch(object):
             e = errors.HTTPNotFound("No resource matches the request")
             raise e
 
+        req.path_info_pop()
         return resource(req)
 
     def match(self, req, resources):
