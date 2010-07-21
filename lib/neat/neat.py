@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from urllib import urlencode
 
@@ -187,7 +188,19 @@ class Dispatch(object):
             e = errors.HTTPNotFound("No resource matches the request")
             raise e
 
-        return resource(req)
+        try:
+            response = resource(req)
+        except errors.HTTPException, e:
+            response = e
+        finally:
+            # Apache Combined format: http://httpd.apache.org/docs/1.3/logs.html#common
+            log.info("%s - - %s \"%s\" %s %s %s %s", 
+                req.remote_addr, time.strftime("%Y-%m-%d %H:%M:%S %z"), 
+                req.__str__(skip_body=True).splitlines()[0], 
+                response.status_int, response.content_length, 
+                req.referer, req.user_agent)
+
+        return response
 
     def match(self, req, resources):
         """Return the resource that matches *req*.
