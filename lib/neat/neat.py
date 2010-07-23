@@ -194,11 +194,15 @@ class Dispatch(object):
             response = e
         finally:
             # Apache Combined format: http://httpd.apache.org/docs/1.3/logs.html#common
+            content_length = None
+            status_int = 200
+            if response is not None:
+                content_length = response.content_length
+                status_int = response.status_int
             log.info("%s - - %s \"%s\" %s %s %s %s", 
                 req.remote_addr, time.strftime("%Y-%m-%d %H:%M:%S %z"), 
                 req.__str__(skip_body=True).splitlines()[0], 
-                response.status_int, response.content_length, 
-                req.referer, req.user_agent)
+                status_int, content_length, req.referer, req.user_agent)
 
         return response
 
