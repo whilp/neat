@@ -189,6 +189,7 @@ class Dispatch(object):
             e = errors.HTTPNotFound("No resource matches the request")
             raise e
 
+        response = None
         try:
             response = resource(req)
         except errors.HTTPException, e:
