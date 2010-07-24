@@ -103,14 +103,13 @@ class Resource(object):
 
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
+        content = Accept("Content-Type", req.content_type)
         if media is None:
-            content = Accept("Content-Type", req.content_type)
             accept = req.accept
             if not accept:
                 accept = Accept("Accept", req.content_type)
         else:
             accept = Accept("Accept", media)
-            content = Accept("Content-Type", media)
             req.path_info = root
 
         responsetype = accept.best_match(self.media)
