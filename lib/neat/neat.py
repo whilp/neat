@@ -101,7 +101,7 @@ class Resource(object):
         # The first element of PATH_INFO is the same as our prefix.
         req.path_info_pop()
 
-        _, ext = os.path.splitext(req.path_info)
+        root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         if media is None:
             content = Accept("Content-Type", req.content_type)
@@ -111,6 +111,7 @@ class Resource(object):
         else:
             accept = Accept("Accept", media)
             content = Accept("Content-Type", media)
+            req.path_info = root
 
         responsetype = accept.best_match(self.media)
         media = self.media.get(responsetype, None)
