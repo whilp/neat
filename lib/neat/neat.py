@@ -152,6 +152,9 @@ class Resource(object):
                 req.method, req.path_info)
             raise errors.HTTPInternalServerError()
 
+        if response is None:
+            response = self.response
+
         content = getattr(response, "content_type", 
             getattr(self, "response.content_type", None))
         if not content:
