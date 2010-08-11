@@ -66,6 +66,21 @@ class Resource(object):
      * *response*, a :class:`webob.Response` instance;
      * *content*, an object produced by a handle_<media> method.
     """
+    params = {}
+    """A dictionary of 'magic' parameters.
+
+    These GET parameters allow less-than-perfect clients to use interesting HTTP
+    features even if the client itself doesn't support them at the protocol
+    level. Keys in the dictionary represent the feature to be supported (ie "method");
+    the value indicates the name of the GET parameter used to signal the
+    feature. For example, params = {"method": "_method"} would allow clients to
+    set the HTTP method using the "_method" get parameter. By default, no magic
+    parameters are supported. Possible keys include:
+     
+     * *method* (HTTP method)
+     * *accept* (desired response media type)
+     * *content-type* (request content type)
+    """
 
     @wsgify
     def __call__(self, req):
@@ -91,7 +106,12 @@ class Resource(object):
         """
         log = logger(self)
         try:
-            httpmethod = self.methods[req.method]
+            httpmethod = req.params[self.params["method"]]
+        except KeyError:
+            httpmethod = req.method
+            
+        try:
+            httpmethod = self.methods[httpmethod]
         except KeyError:
             e =  errors.HTTPMethodNotAllowed(
                 "HTTP method '%s' is not supported" % req.method,
@@ -103,11 +123,18 @@ class Resource(object):
 
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
-        content = Accept("Content-Type", req.content_type)
+        try:
+            content = req.params[self.params["content-type"]]
+        except KeyError:
+            content = req.content_type
+        content = Accept("Content-Type", content)
         if media is None:
-            accept = req.accept
+            try:
+                accept = req.params[self.params["accept"]]
+            except KeyError:
+                accept = req.accept
             if not accept:
-                accept = Accept("Accept", req.content_type)
+                accept = content
         else:
             accept = Accept("Accept", media)
             req.path_info = root
