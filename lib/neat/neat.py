@@ -214,12 +214,15 @@ class Dispatch(object):
         response = None
         try:
             response = resource(req)
-        except errors.HTTPException, e:
-            response = e
         except Exception, e:
-            log.exception("Exception encountered while processing %s %s: %s", 
-                req.method, req.path_info, e)
-            response = errors.HTTPInternalServerError()
+            if isinstance(e, errors.HTTPException):
+                if e.status_int > 400:
+                    log.exception("HTTP Exception at %s %s: %s", 
+                        req.method, req.path_info, e)
+                response = e
+            else:
+                log.exception("Server exception: %s", e)
+                response = errors.HTTPInternalServerError()
         finally:
             # Apache Combined format: http://httpd.apache.org/docs/1.3/logs.html#common
             content_length = None
