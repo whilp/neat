@@ -130,7 +130,7 @@ class Resource(object):
         content = Accept("Content-Type", content)
         if media is None:
             try:
-                accept = req.params[self.params["accept"]]
+                accept = Accept("Accept", req.params[self.params["accept"]])
             except KeyError:
                 accept = req.accept
             if not accept:
@@ -170,14 +170,7 @@ class Resource(object):
                 handler = lambda : self.req.params
             req.content = handler()
 
-        try:
-            response = method()
-        except errors.HTTPException:
-            raise
-        except Exception, e:
-            log.exception("Exception encountered while processing %s %s:", 
-                req.method, req.path_info)
-            raise errors.HTTPInternalServerError()
+        response = method()
 
         if response is None:
             response = self.response
@@ -223,6 +216,10 @@ class Dispatch(object):
             response = resource(req)
         except errors.HTTPException, e:
             response = e
+        except Exception, e:
+            log.exception("Exception encountered while processing %s %s: %s", 
+                req.method, req.path_info, e)
+            response = errors.HTTPInternalServerError()
         finally:
             # Apache Combined format: http://httpd.apache.org/docs/1.3/logs.html#common
             content_length = None
