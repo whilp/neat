@@ -106,7 +106,7 @@ class Resource(object):
         """
         log = logger(self)
         try:
-            httpmethod = req.params[self.params["method"]]
+            httpmethod = req.GET.pop(self.params["method"])
         except KeyError:
             httpmethod = req.method
             
@@ -124,13 +124,13 @@ class Resource(object):
         root, ext = os.path.splitext(req.path_info)
         media = self.extensions.get(ext, None)
         try:
-            content = req.params[self.params["content-type"]]
+            content = req.GET.pop(self.params["content-type"])
         except KeyError:
             content = req.content_type
         content = Accept("Content-Type", content)
         if media is None:
             try:
-                accept = Accept("Accept", req.params[self.params["accept"]])
+                accept = Accept("Accept", req.GET.pop(self.params["accept"]))
             except KeyError:
                 accept = req.accept
             if not accept:
