@@ -247,9 +247,9 @@ class Dispatch(object):
         A request matches if:
          
          * PATH_INFO ends in '/' and starts with the resource's
-         :attr:`Resource.prefix` attribute; or
+           :attr:`Resource.prefix` attribute; or
          * PATH_INFO is the same as the resource's :attr:`Resource.prefix`
-         attribute.
+           attribute.
 
         The first match wins.
         """

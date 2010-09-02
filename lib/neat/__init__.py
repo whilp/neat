@@ -10,7 +10,7 @@ to consume.
 """
 
 __project__ = "neat"
-__version__ = "0.1"
+__version__ = "0.4.1"
 __package__ = "neat"
 __description__ = "neat WSGI API framework"
 __author__ = "Will Maier"
