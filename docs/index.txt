@@ -106,11 +106,16 @@ matches the HTTP request's Content header.
 API
 ---
 
-Here's the API.
-
 .. automodule:: neat.neat
-    :members:
     :show-inheritance:
+
+    .. autoclass:: Resource
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: Dispatch
+        :members:
+        :show-inheritance:
 
 Developing :mod:`neat`
 ----------------------
